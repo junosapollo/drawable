@@ -1,6 +1,6 @@
 # drawable
 
-A local-first line-art reference copilot for character artists. The current implementation is a frontend vertical slice with a layered pressure-sensitive canvas, responsive professional workspace, local autosave/export, and deterministic procedural reference fixtures.
+A line-art reference copilot for character artists.
 
 ## Run the frontend
 
