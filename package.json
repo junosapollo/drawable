@@ -1,0 +1,16 @@
+{
+  "name": "drawable",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "npm run dev --workspace=@drawable/web",
+    "build": "npm run build --workspace=@drawable/web",
+    "check": "npm run check --workspace=@drawable/web",
+    "test": "npm run test --workspace=@drawable/web",
+    "test:e2e": "npm run test:e2e --workspace=@drawable/web"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
