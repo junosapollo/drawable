@@ -1,5 +1,5 @@
 import { getStroke } from 'perfect-freehand'
-import type { DrawPoint, DrawingLayer, StrokeOperation } from './types'
+import type { DrawPoint, DrawingLayer, DrawingOperation, RasterOperation, StrokeOperation } from './types'
 
 export function uid(prefix: string) {
   const value = typeof crypto !== 'undefined' && crypto.randomUUID
@@ -71,9 +71,34 @@ export function renderOperation(
   context.restore()
 }
 
-export function renderLayer(context: CanvasRenderingContext2D, layer: DrawingLayer) {
+export function renderRasterOperation(
+  context: CanvasRenderingContext2D,
+  operation: RasterOperation,
+  image: CanvasImageSource | undefined,
+) {
+  if (!image) return
+  context.save()
+  context.globalCompositeOperation = 'source-over'
+  context.drawImage(image, operation.x, operation.y, operation.width, operation.height)
+  context.restore()
+}
+
+export function renderDrawingOperation(
+  context: CanvasRenderingContext2D,
+  operation: DrawingOperation,
+  rasterAssets: ReadonlyMap<string, CanvasImageSource> = new Map(),
+) {
+  if (operation.kind === 'raster') renderRasterOperation(context, operation, rasterAssets.get(operation.assetId))
+  else renderOperation(context, operation)
+}
+
+export function renderLayer(
+  context: CanvasRenderingContext2D,
+  layer: DrawingLayer,
+  rasterAssets: ReadonlyMap<string, CanvasImageSource> = new Map(),
+) {
   context.clearRect(0, 0, context.canvas.width, context.canvas.height)
-  for (const operation of layer.operations) renderOperation(context, operation)
+  for (const operation of layer.operations) renderDrawingOperation(context, operation, rasterAssets)
 }
 
 export function countDocumentStrokes(layers: DrawingLayer[]) {

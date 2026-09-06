@@ -4,6 +4,7 @@ import { LOGICAL_SIZE, type DrawPoint, type StrokeOperation } from '../lib/types
 import { useDocumentStore } from '../state/documentStore'
 import { useSearchStore } from '../state/searchStore'
 import { useViewStore } from '../state/viewStore'
+import { resolveRasterImages } from '../services/rasterAssets'
 
 interface PanGesture {
   pointerId: number
@@ -81,11 +82,16 @@ export function CanvasStage() {
   useEffect(() => { fitCanvas() }, [fitCanvas, fitRequest])
 
   useEffect(() => {
-    for (const layer of document.layers) {
-      const canvas = layerCanvasRefs.current.get(layer.id)
-      const context = canvas?.getContext('2d')
-      if (context) renderLayer(context, layer)
-    }
+    let active = true
+    resolveRasterImages(document).catch(() => new Map<string, CanvasImageSource>()).then((rasterAssets) => {
+      if (!active) return
+      for (const layer of document.layers) {
+        const canvas = layerCanvasRefs.current.get(layer.id)
+        const context = canvas?.getContext('2d')
+        if (context) renderLayer(context, layer, rasterAssets)
+      }
+    })
+    return () => { active = false }
   }, [document.layers])
 
   useEffect(() => {

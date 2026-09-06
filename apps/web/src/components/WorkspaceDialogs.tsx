@@ -1,17 +1,22 @@
-import { Download, Keyboard, MonitorCog } from 'lucide-react'
+import { useState } from 'react'
+import { Download, ExternalLink, FileUp, Keyboard, LoaderCircle, MonitorCog } from 'lucide-react'
 import * as Slider from '@radix-ui/react-slider'
 import { AppDialog, Button, Field } from './primitives'
 import { useUiStore } from '../state/uiStore'
 import { useDocumentStore } from '../state/documentStore'
 import { exportPng, exportSvg } from '../lib/exportDocument'
 import type { DrawingDocument, ThemeChoice } from '../lib/types'
+import { exportDrawableProject, prepareImport } from '../lib/projectFiles'
+import { stageImport } from '../services/persistence'
 
 export function WorkspaceDialogs() {
   const settingsOpen = useUiStore((state) => state.settingsOpen)
   const exportOpen = useUiStore((state) => state.exportOpen)
+  const importOpen = useUiStore((state) => state.importOpen)
   const shortcutsOpen = useUiStore((state) => state.shortcutsOpen)
   const setSettingsOpen = useUiStore((state) => state.setSettingsOpen)
   const setExportOpen = useUiStore((state) => state.setExportOpen)
+  const setImportOpen = useUiStore((state) => state.setImportOpen)
   const setShortcutsOpen = useUiStore((state) => state.setShortcutsOpen)
   const theme = useUiStore((state) => state.theme)
   const setTheme = useUiStore((state) => state.setTheme)
@@ -22,6 +27,18 @@ export function WorkspaceDialogs() {
   const setStabilization = useDocumentStore((state) => state.setStabilization)
   const setSimulatePressure = useDocumentStore((state) => state.setSimulatePressure)
   const document = useDocumentStore((state) => state.document)
+  const activeLayerId = useDocumentStore((state) => state.activeLayerId)
+  const [exportError, setExportError] = useState<string | null>(null)
+
+  const runExport = async (action: () => Promise<void>) => {
+    setExportError(null)
+    try {
+      await action()
+      setExportOpen(false)
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : 'The drawing could not be exported.')
+    }
+  }
 
   return (
     <>
@@ -37,11 +54,14 @@ export function WorkspaceDialogs() {
           <button className="text-action" onClick={() => { setSettingsOpen(false); setShortcutsOpen(true) }}><Keyboard size={16} />View keyboard shortcuts</button>
         </div>
       </AppDialog>
-      <AppDialog open={exportOpen} onOpenChange={setExportOpen} title="Export drawing" description="The reference trace is always excluded.">
+      <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
+      <AppDialog open={exportOpen} onOpenChange={(open) => { setExportOpen(open); if (open) setExportError(null) }} title="Export drawing" description="The reference trace image is never embedded.">
         <div className="export-options">
-          <ExportOption title="PNG · White background" detail="2048 × 2048 raster" onClick={() => { exportPng(document, false); setExportOpen(false) }} />
-          <ExportOption title="PNG · Transparent" detail="2048 × 2048 raster" onClick={() => { exportPng(document, true); setExportOpen(false) }} />
-          <ExportOption title="SVG" detail="Vector strokes with erase masks" onClick={() => { exportSvg(document); setExportOpen(false) }} />
+          <ExportOption title="drawable project · Editable" detail="Layers, strokes, and imported artwork" onClick={() => runExport(() => exportDrawableProject(document, activeLayerId))} />
+          <ExportOption title="PNG · White background" detail="2048 × 2048 raster" onClick={() => runExport(() => exportPng(document, false))} />
+          <ExportOption title="PNG · Transparent" detail="2048 × 2048 raster" onClick={() => runExport(() => exportPng(document, true))} />
+          <ExportOption title="SVG" detail="Vector strokes, imported artwork, and erase masks" onClick={() => runExport(() => exportSvg(document))} />
+          {exportError ? <p className="dialog-error" role="alert">{exportError}</p> : null}
         </div>
       </AppDialog>
       <AppDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} title="Keyboard shortcuts">
@@ -53,8 +73,64 @@ export function WorkspaceDialogs() {
   )
 }
 
-function ExportOption({ title, detail, onClick }: { title: string; detail: string; onClick: () => void }) {
+function ExportOption({ title, detail, onClick }: { title: string; detail: string; onClick: () => void | Promise<void> }) {
   return <Button className="export-option" onClick={onClick}><Download size={18} /><span><strong>{title}</strong><small>{detail}</small></span></Button>
+}
+
+function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const [state, setState] = useState<'idle' | 'validating' | 'ready' | 'error'>('idle')
+  const [message, setMessage] = useState('')
+  const [token, setToken] = useState<string | null>(null)
+  const reset = () => { setState('idle'); setMessage(''); setToken(null) }
+  const handleFile = async (file: File | undefined) => {
+    if (!file) return
+    setState('validating')
+    setMessage(`Checking ${file.name}…`)
+    setToken(null)
+    try {
+      const prepared = await prepareImport(file)
+      const nextToken = await stageImport(prepared)
+      setToken(nextToken)
+      setMessage(`${file.name} is ready to open as an independent drawing.`)
+      setState('ready')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'The selected sketch could not be imported.')
+      setState('error')
+    }
+  }
+  return (
+    <AppDialog
+      open={open}
+      onOpenChange={(next) => { onOpenChange(next); if (!next) reset() }}
+      title="Import sketch"
+      description="Open an editable drawable project, PNG, or self-contained SVG in a new tab."
+    >
+      <div className="import-panel">
+        <label className="file-picker">
+          <input
+            type="file"
+            accept=".drawable,application/vnd.drawable.project+json,image/png,image/svg+xml"
+            disabled={state === 'validating'}
+            onChange={(event) => { void handleFile(event.target.files?.[0]); event.currentTarget.value = '' }}
+          />
+          <FileUp size={20} />
+          <span><strong>{state === 'ready' ? 'Choose another file' : 'Choose a sketch'}</strong><small>.drawable, PNG, or SVG</small></span>
+        </label>
+        {state !== 'idle' ? (
+          <div className={`import-result import-result--${state}`} role={state === 'error' ? 'alert' : 'status'}>
+            {state === 'validating' ? <LoaderCircle className="spin" size={17} /> : <span className="status-dot" />}
+            <span>{message}</span>
+          </div>
+        ) : null}
+        {state === 'ready' && token ? (
+          <a className="button button--primary import-open" href={`/draw?import=${encodeURIComponent(token)}`} target="_blank" rel="noopener noreferrer">
+            <ExternalLink size={16} />Open imported sketch
+          </a>
+        ) : null}
+        <p className="import-footnote">Your current drawing stays open and unchanged in this tab.</p>
+      </div>
+    </AppDialog>
+  )
 }
 
 export function RestoreDialog({ document, onRestore, onDiscard }: { document: DrawingDocument | null; onRestore: () => void; onDiscard: () => void }) {

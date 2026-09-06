@@ -15,6 +15,8 @@ Open `http://127.0.0.1:5173/draw`.
 
 The frontend does not require a backend. Its fixture service simulates live reference results after each completed stroke. Type `slow`, `error`, or `empty` into the optional reference hint to exercise those states.
 
+Use **Export drawing → drawable project · Editable** to save a lossless `.drawable` project. **Import sketch** accepts `.drawable`, PNG, and self-contained SVG files and opens each imported sketch as an independent drawing in a new tab.
+
 ## Checks
 
 ```bash

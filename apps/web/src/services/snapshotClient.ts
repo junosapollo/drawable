@@ -1,5 +1,6 @@
 import { rasterizeDocument } from '../lib/exportDocument'
 import type { DrawingDocument } from '../lib/types'
+import { resolveRasterBitmaps } from './rasterAssets'
 
 export interface PreparedSnapshot {
   revision: number
@@ -38,7 +39,7 @@ function canvasBlob(canvas: HTMLCanvasElement) {
 }
 
 async function mainThreadFallback(document: DrawingDocument, revision: number, generation: number): Promise<PreparedSnapshot> {
-  const source = rasterizeDocument(document, false)
+  const source = await rasterizeDocument(document, false)
   const target = globalThis.document.createElement('canvas')
   target.width = 512
   target.height = 512
@@ -49,6 +50,11 @@ async function mainThreadFallback(document: DrawingDocument, revision: number, g
 export async function prepareSnapshot(document: DrawingDocument, generation: number, signal: AbortSignal) {
   const revision = document.revision
   if (typeof Worker === 'undefined' || typeof OffscreenCanvas === 'undefined') return mainThreadFallback(document, revision, generation)
+  const rasterAssets = await resolveRasterBitmaps(document)
+  if (signal.aborted) {
+    for (const asset of rasterAssets) asset.bitmap.close()
+    throw new DOMException('Snapshot cancelled', 'AbortError')
+  }
   const id = crypto.randomUUID()
   return new Promise<PreparedSnapshot>((resolve, reject) => {
     const onAbort = () => {
@@ -60,6 +66,6 @@ export async function prepareSnapshot(document: DrawingDocument, generation: num
       resolve: (value) => { signal.removeEventListener('abort', onAbort); resolve(value) },
       reject: (error) => { signal.removeEventListener('abort', onAbort); reject(error) },
     })
-    snapshotWorker().postMessage({ id, revision, generation, document })
+    snapshotWorker().postMessage({ id, revision, generation, document, rasterAssets }, rasterAssets.map((asset) => asset.bitmap))
   })
 }

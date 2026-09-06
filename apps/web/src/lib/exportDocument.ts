@@ -1,5 +1,6 @@
 import { outlineToPath, renderLayer, strokeOutline } from './drawing'
-import { LOGICAL_SIZE, type DrawingDocument } from './types'
+import { LOGICAL_SIZE, type DrawingDocument, type StrokeOperation } from './types'
+import { loadReferencedRasterAssets, resolveRasterImages } from '../services/rasterAssets'
 
 function download(blob: Blob, filename: string) {
   const link = document.createElement('a')
@@ -13,7 +14,8 @@ function safeTitle(title: string) {
   return title.trim().replaceAll(/[^a-z0-9-_]+/gi, '-').replaceAll(/^-|-$/g, '') || 'drawing'
 }
 
-export function rasterizeDocument(document: DrawingDocument, transparent: boolean) {
+export async function rasterizeDocument(document: DrawingDocument, transparent: boolean) {
+  const rasterAssets = await resolveRasterImages(document)
   const output = window.document.createElement('canvas')
   output.width = LOGICAL_SIZE
   output.height = LOGICAL_SIZE
@@ -27,7 +29,7 @@ export function rasterizeDocument(document: DrawingDocument, transparent: boolea
     const layerCanvas = window.document.createElement('canvas')
     layerCanvas.width = LOGICAL_SIZE
     layerCanvas.height = LOGICAL_SIZE
-    renderLayer(layerCanvas.getContext('2d')!, layer)
+    renderLayer(layerCanvas.getContext('2d')!, layer, rasterAssets)
     context.globalAlpha = layer.opacity
     context.drawImage(layerCanvas, 0, 0)
   }
@@ -35,23 +37,47 @@ export function rasterizeDocument(document: DrawingDocument, transparent: boolea
   return output
 }
 
-export function exportPng(document: DrawingDocument, transparent: boolean) {
-  rasterizeDocument(document, transparent).toBlob((blob) => {
-    if (blob) download(blob, `${safeTitle(document.title)}.png`)
-  }, 'image/png')
+export async function exportPng(document: DrawingDocument, transparent: boolean) {
+  const canvas = await rasterizeDocument(document, transparent)
+  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error('PNG export failed.')), 'image/png'))
+  download(blob, `${safeTitle(document.title)}.png`)
 }
 
-export function exportSvg(document: DrawingDocument) {
+function blobToDataUrl(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(reader.error ?? new Error('Could not read imported artwork.'))
+    reader.readAsDataURL(blob)
+  })
+}
+
+function isEraser(operation: DrawingDocument['layers'][number]['operations'][number]): operation is StrokeOperation {
+  return operation.kind === 'stroke' && operation.tool === 'eraser'
+}
+
+export async function exportSvg(document: DrawingDocument) {
+  const rasterData = new Map<string, string>()
+  for (const asset of await loadReferencedRasterAssets(document)) rasterData.set(asset.id, await blobToDataUrl(asset.blob))
   const definitions: string[] = []
   const groups: string[] = []
   for (const layer of [...document.layers].reverse()) {
     if (!layer.visible || layer.opacity <= 0) continue
     const draws: string[] = []
     layer.operations.forEach((operation, index) => {
+      if (operation.kind === 'raster') {
+        const source = rasterData.get(operation.assetId)
+        if (!source) return
+        const followingErasers = layer.operations.slice(index + 1).filter(isEraser)
+        const maskId = `${layer.id}-raster-${index}`
+        if (followingErasers.length) definitions.push(`<mask id="${maskId}"><rect width="2048" height="2048" fill="white"/>${followingErasers.map((eraser) => `<path d="${outlineToPath(strokeOutline(eraser))}" fill="black"/>`).join('')}</mask>`)
+        draws.push(`<image href="${source}" x="${operation.x}" y="${operation.y}" width="${operation.width}" height="${operation.height}"${followingErasers.length ? ` mask="url(#${maskId})"` : ''}/>`)
+        return
+      }
       if (operation.tool === 'eraser') return
       const drawPath = outlineToPath(strokeOutline(operation))
       if (!drawPath) return
-      const followingErasers = layer.operations.slice(index + 1).filter((candidate) => candidate.tool === 'eraser')
+      const followingErasers = layer.operations.slice(index + 1).filter(isEraser)
       if (followingErasers.length === 0) {
         draws.push(`<path d="${drawPath}"/>`)
         return

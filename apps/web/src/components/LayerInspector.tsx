@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, Eye, EyeOff, Trash2, X } from 'lucide-react'
 import * as Slider from '@radix-ui/react-slider'
-import { renderOperation } from '../lib/drawing'
+import { renderDrawingOperation } from '../lib/drawing'
 import type { DrawingLayer } from '../lib/types'
 import { useDocumentStore } from '../state/documentStore'
 import { useUiStore } from '../state/uiStore'
 import { AppDialog, Button, IconButton } from './primitives'
+import { resolveRasterImages } from '../services/rasterAssets'
 
 function LayerThumbnail({ layer }: { layer: DrawingLayer }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -13,11 +14,16 @@ function LayerThumbnail({ layer }: { layer: DrawingLayer }) {
     const canvas = canvasRef.current
     const context = canvas?.getContext('2d')
     if (!canvas || !context) return
-    context.clearRect(0, 0, canvas.width, canvas.height)
-    context.save()
-    context.scale(canvas.width / 2048, canvas.height / 2048)
-    for (const operation of layer.operations) renderOperation(context, operation)
-    context.restore()
+    let active = true
+    resolveRasterImages(useDocumentStore.getState().document).then((assets) => {
+      if (!active) return
+      context.clearRect(0, 0, canvas.width, canvas.height)
+      context.save()
+      context.scale(canvas.width / 2048, canvas.height / 2048)
+      for (const operation of layer.operations) renderDrawingOperation(context, operation, assets)
+      context.restore()
+    }).catch(() => undefined)
+    return () => { active = false }
   }, [layer])
   return <canvas ref={canvasRef} className="layer-thumbnail" width={56} height={56} aria-hidden="true" />
 }

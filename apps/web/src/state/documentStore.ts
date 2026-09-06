@@ -38,7 +38,7 @@ interface DocumentState {
   simulatePressure: boolean
   hasHydrated: boolean
   setHydrated: (value: boolean) => void
-  replaceDocument: (document: DrawingDocument) => void
+  replaceDocument: (document: DrawingDocument, activeLayerId?: string) => void
   setTitle: (title: string) => void
   setTool: (tool: Tool) => void
   setBrushSize: (size: number) => void
@@ -52,6 +52,7 @@ interface DocumentState {
   setTrace: (assetId: string, imageUrl: string) => void
   updateTrace: (update: Partial<Pick<DrawingDocument['trace'], 'visible' | 'opacity' | 'scale'>>) => void
   clearTrace: () => void
+  setResolvedTraceImage: (imageUrl: string | null) => void
   undo: () => void
   redo: () => void
   newDocument: () => void
@@ -84,7 +85,7 @@ export const useDocumentStore = create<DocumentState>((set) => ({
   simulatePressure: true,
   hasHydrated: false,
   setHydrated: (hasHydrated) => set({ hasHydrated }),
-  replaceDocument: (document) => set((state) => ({ document: { ...cloneDocument(document), revision: state.document.revision + 1 }, past: [], future: [], activeLayerId: document.layers[0]?.id ?? 'layer-1' })),
+  replaceDocument: (document, activeLayerId) => set((state) => ({ document: { ...cloneDocument(document), revision: state.document.revision + 1 }, past: [], future: [], activeLayerId: document.layers.some((layer) => layer.id === activeLayerId) ? activeLayerId! : document.layers[0]?.id ?? 'layer-1' })),
   setTitle: (title) => set((state) => mutateDocument(state, (document) => { document.title = title.slice(0, 80) }, false)),
   setTool: (activeTool) => set({ activeTool }),
   setBrushSize: (brushSize) => set({ brushSize: Math.min(40, Math.max(1, brushSize)) }),
@@ -122,6 +123,7 @@ export const useDocumentStore = create<DocumentState>((set) => ({
     document.trace.assetId = null
     document.trace.imageUrl = null
   }, false)),
+  setResolvedTraceImage: (imageUrl) => set((state) => ({ document: { ...state.document, trace: { ...state.document.trace, imageUrl } } })),
   undo: () => set((state) => {
     const previous = state.past.at(-1)
     if (!previous) return state

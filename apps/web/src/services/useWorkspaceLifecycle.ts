@@ -5,14 +5,17 @@ import { useDocumentStore } from '../state/documentStore'
 import { useSearchStore } from '../state/searchStore'
 import { useUiStore } from '../state/uiStore'
 import { fixtureServices } from './frontendServices'
-import { loadDocument, saveDocument } from './persistence'
+import { cleanupExpiredImports, loadDocument, materializeStagedImport, saveDocument, type LoadedDocument } from './persistence'
 import { prepareSnapshot } from './snapshotClient'
+import { acquireDocumentLease, type DocumentLease } from './documentLock'
 
 export function useWorkspaceLifecycle() {
   const document = useDocumentStore((state) => state.document)
   const hasHydrated = useDocumentStore((state) => state.hasHydrated)
   const setHydrated = useDocumentStore((state) => state.setHydrated)
   const replaceDocument = useDocumentStore((state) => state.replaceDocument)
+  const activeLayerId = useDocumentStore((state) => state.activeLayerId)
+  const setResolvedTraceImage = useDocumentStore((state) => state.setResolvedTraceImage)
   const generation = useSearchStore((state) => state.generation)
   const drawing = useSearchStore((state) => state.drawing)
   const textHint = useSearchStore((state) => state.textHint)
@@ -21,29 +24,102 @@ export function useWorkspaceLifecycle() {
   const setResponse = useSearchStore((state) => state.setResponse)
   const setError = useSearchStore((state) => state.setError)
   const theme = useUiStore((state) => state.theme)
-  const [restoreCandidate, setRestoreCandidate] = useState<DrawingDocument | null>(null)
+  const [restoreCandidate, setRestoreCandidate] = useState<LoadedDocument | null>(null)
   const [saveState, setSaveState] = useState<'saved' | 'saving' | 'error'>('saved')
+  const [notice, setNotice] = useState<string | null>(null)
   const previousRevision = useRef(document.revision)
+  const lease = useRef<DocumentLease | null>(null)
+  const activationVersion = useRef(0)
+
+  const setDocumentUrl = (documentId: string) => {
+    const url = new URL(window.location.href)
+    url.search = ''
+    url.searchParams.set('document', documentId)
+    window.history.replaceState(null, '', `${url.pathname}${url.search}`)
+  }
+
+  const activateDocument = async (loaded: LoadedDocument) => {
+    const activation = ++activationVersion.current
+    let next = loaded
+    let nextLease = await acquireDocumentLease(next.document.id)
+    if (activation !== activationVersion.current) {
+      nextLease.release()
+      return
+    }
+    if (!nextLease.acquired) {
+      nextLease.release()
+      next = {
+        ...next,
+        document: { ...structuredClone(next.document), id: `document-${crypto.randomUUID()}`, updatedAt: Date.now() },
+      }
+      nextLease = await acquireDocumentLease(next.document.id)
+      setNotice('This drawing was already open, so drawable created an independent copy.')
+    }
+    if (activation !== activationVersion.current) {
+      nextLease.release()
+      return
+    }
+    lease.current?.release()
+    lease.current = nextLease
+    replaceDocument(next.document, next.activeLayerId)
+    setDocumentUrl(next.document.id)
+    setHydrated(true)
+  }
 
   useEffect(() => {
     let active = true
-    loadDocument().then((saved) => {
+    const load = async () => {
+      void cleanupExpiredImports().catch(() => undefined)
+      const parameters = new URLSearchParams(window.location.search)
+      const importToken = parameters.get('import')
+      const requestedDocument = parameters.get('document') ?? undefined
+      const saved = importToken ? await materializeStagedImport(importToken) : await loadDocument(requestedDocument)
       if (!active) return
-      const hasInk = saved?.layers.some((layer) => layer.operations.length)
-      if (saved && hasInk) setRestoreCandidate(saved)
-      else setHydrated(true)
-    }).catch(() => setHydrated(true))
-    return () => { active = false }
+      if (importToken && !saved) {
+        setNotice('This import link has expired. Return to the original tab and choose the file again.')
+        const blank = useDocumentStore.getState().document
+        await activateDocument({ document: blank, activeLayerId: 'layer-1' })
+        return
+      }
+      const hasInk = saved?.document.layers.some((layer) => layer.operations.length)
+      if (saved && hasInk && !importToken) setRestoreCandidate(saved)
+      else if (saved) {
+        await activateDocument(saved)
+        if (importToken) setNotice('Imported sketch opened as a new local drawing.')
+      } else {
+        const blank = useDocumentStore.getState().document
+        await activateDocument({ document: blank, activeLayerId: 'layer-1' })
+      }
+    }
+    void load().catch(() => {
+      if (active) {
+        setNotice('Local recovery storage could not be opened. Drawing remains available, but autosave may be unavailable.')
+        setHydrated(true)
+      }
+    })
+    return () => { active = false; activationVersion.current += 1; lease.current?.release(); lease.current = null }
+    // Startup must run once per mounted workspace; store changes are handled by the effects below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setHydrated])
 
   useEffect(() => {
     if (!hasHydrated) return
     setSaveState('saving')
     const timer = window.setTimeout(() => {
-      saveDocument(document).then(() => setSaveState('saved')).catch(() => setSaveState('error'))
+      saveDocument(document, activeLayerId).then(() => setSaveState('saved')).catch(() => setSaveState('error'))
     }, 500)
     return () => window.clearTimeout(timer)
-  }, [document, hasHydrated])
+  }, [activeLayerId, document, hasHydrated])
+
+  useEffect(() => {
+    if (!hasHydrated || !document.trace.assetId || document.trace.imageUrl) return
+    const controller = new AbortController()
+    fixtureServices.assets.resolveTrace(document.trace.assetId, controller.signal).then((imageUrl) => {
+      if (imageUrl) setResolvedTraceImage(imageUrl)
+      else setNotice('The saved trace reference is unavailable; the drawing opened without it.')
+    }).catch(() => setNotice('The saved trace reference is unavailable; the drawing opened without it.'))
+    return () => controller.abort()
+  }, [document.trace.assetId, document.trace.imageUrl, hasHydrated, setResolvedTraceImage])
 
   useEffect(() => {
     if (previousRevision.current !== document.revision) {
@@ -91,14 +167,14 @@ export function useWorkspaceLifecycle() {
   }, [theme])
 
   const restore = () => {
-    if (restoreCandidate) replaceDocument(restoreCandidate)
+    if (restoreCandidate) void activateDocument(restoreCandidate)
     setRestoreCandidate(null)
-    setHydrated(true)
   }
   const discard = () => {
     setRestoreCandidate(null)
-    setHydrated(true)
+    const blank = useDocumentStore.getState().document
+    void activateDocument({ document: blank, activeLayerId: 'layer-1' })
   }
 
-  return { saveState, restoreCandidate, restore, discard }
+  return { saveState, restoreCandidate: restoreCandidate?.document ?? null, restore, discard, notice, dismissNotice: () => setNotice(null) }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Download,
+  FileUp,
   Scan,
   Layers3,
   Moon,
@@ -32,6 +33,7 @@ export function AppBar({ saveState }: { saveState: 'saved' | 'saving' | 'error' 
   const dockMode = useUiStore((state) => state.dockMode)
   const setDockMode = useUiStore((state) => state.setDockMode)
   const setExportOpen = useUiStore((state) => state.setExportOpen)
+  const setImportOpen = useUiStore((state) => state.setImportOpen)
   const setSettingsOpen = useUiStore((state) => state.setSettingsOpen)
   const theme = useUiStore((state) => state.theme)
   const setTheme = useUiStore((state) => state.setTheme)
@@ -86,6 +88,7 @@ export function AppBar({ saveState }: { saveState: 'saved' | 'saving' | 'error' 
         <IconButton label="Fit canvas · 0" size="small" onClick={requestFit}><Scan size={16} /></IconButton>
         <span className="zoom-value">{Math.round(zoom * 100)}%</span>
         <span className="save-status"><StatusDot tone={saveState === 'error' ? 'error' : loading ? 'warning' : 'success'} />{status}</span>
+        <IconButton label="Import sketch" size="small" onClick={() => setImportOpen(true)}><FileUp size={16} /></IconButton>
         <IconButton label="Export drawing" size="small" onClick={() => setExportOpen(true)}><Download size={16} /></IconButton>
         <IconButton label="Toggle theme" size="small" onClick={() => setTheme(globalThis.document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark')}>
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
