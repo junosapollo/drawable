@@ -1,4 +1,4 @@
-NEW/
+# --- Node / frontend
 node_modules/
 dist/
 coverage/
@@ -7,3 +7,50 @@ test-results/
 *.tsbuildinfo
 *.log
 .DS_Store
+
+# --- Python
+.venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+*.egg-info/
+
+# --- Local configuration (never commit machine paths or secrets)
+.env
+.env.*
+!.env.example
+
+# --- Data, models, indexes, and user drawings live outside Git.
+# Only manifests, scripts, schemas, tests, and small synthetic fixtures are committed.
+data/*
+!data/README.md
+datasets/
+models/
+checkpoints/
+indexes/
+embeddings/
+thumbnails/
+runs/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.faiss
+*.npy
+*.npz
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.h5
+*.parquet
+*.arrow
+
+# The synthetic fixture is the one dataset we do commit.
+!ml/fixtures/
+!ml/fixtures/**
+
+# Scratch
+NEW/

@@ -47,7 +47,7 @@ export const useSearchStore = create<SearchState>((set, get) => ({
   setResponse: (response) => set({ response, error: null, loading: false }),
   setError: (error) => set({ error, loading: false }),
   setTextHint: (textHint) => set((state) => ({ textHint: textHint.slice(0, 120), generation: state.generation + 1 })),
-  setSelectedStyle: (selectedStyle) => set({ selectedStyle }),
+  setSelectedStyle: (selectedStyle) => set((state) => ({ selectedStyle, generation: state.generation + 1 })),
   setSelectedAsset: (selectedAsset) => set({ selectedAsset }),
   togglePin: (asset) => set((state) => {
     const exists = state.pinned.some((item) => item.id === asset.id)

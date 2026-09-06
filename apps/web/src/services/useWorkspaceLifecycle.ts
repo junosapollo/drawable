@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { countDocumentStrokes } from '../lib/drawing'
+import { buildStrokeSequence, countDocumentPoints } from '../lib/strokeSequence'
 import type { DrawingDocument } from '../lib/types'
 import { useDocumentStore } from '../state/documentStore'
 import { useSearchStore } from '../state/searchStore'
 import { useUiStore } from '../state/uiStore'
 import { fixtureServices } from './frontendServices'
 import { cleanupExpiredImports, loadDocument, materializeStagedImport, saveDocument, type LoadedDocument } from './persistence'
+import { useServiceStore } from './serviceRegistry'
 import { prepareSnapshot } from './snapshotClient'
 import { acquireDocumentLease, type DocumentLease } from './documentLock'
 
@@ -19,11 +21,16 @@ export function useWorkspaceLifecycle() {
   const generation = useSearchStore((state) => state.generation)
   const drawing = useSearchStore((state) => state.drawing)
   const textHint = useSearchStore((state) => state.textHint)
+  const selectedStyle = useSearchStore((state) => state.selectedStyle)
   const invalidate = useSearchStore((state) => state.invalidate)
   const setLoading = useSearchStore((state) => state.setLoading)
   const setResponse = useSearchStore((state) => state.setResponse)
   const setError = useSearchStore((state) => state.setError)
   const theme = useUiStore((state) => state.theme)
+  const serviceMode = useServiceStore((state) => state.mode)
+  const services = useServiceStore((state) => state.services)
+  const sessionId = useServiceStore((state) => state.sessionId)
+  const probeServices = useServiceStore((state) => state.probe)
   const [restoreCandidate, setRestoreCandidate] = useState<LoadedDocument | null>(null)
   const [saveState, setSaveState] = useState<'saved' | 'saving' | 'error'>('saved')
   const [notice, setNotice] = useState<string | null>(null)
@@ -65,6 +72,8 @@ export function useWorkspaceLifecycle() {
     setDocumentUrl(next.document.id)
     setHydrated(true)
   }
+
+  useEffect(() => { void probeServices() }, [probeServices])
 
   useEffect(() => {
     let active = true
@@ -114,7 +123,8 @@ export function useWorkspaceLifecycle() {
   useEffect(() => {
     if (!hasHydrated || !document.trace.assetId || document.trace.imageUrl) return
     const controller = new AbortController()
-    fixtureServices.assets.resolveTrace(document.trace.assetId, controller.signal).then((imageUrl) => {
+    const assetClient = services.assets ?? fixtureServices.assets
+    assetClient.resolveTrace(document.trace.assetId, controller.signal).then((imageUrl) => {
       if (imageUrl) setResolvedTraceImage(imageUrl)
       else setNotice('The saved trace reference is unavailable; the drawing opened without it.')
     }).catch(() => setNotice('The saved trace reference is unavailable; the drawing opened without it.'))
@@ -129,7 +139,7 @@ export function useWorkspaceLifecycle() {
   }, [document.revision, invalidate])
 
   useEffect(() => {
-    if (drawing || !hasHydrated) return
+    if (drawing || !hasHydrated || serviceMode === 'probing') return
     const controller = new AbortController()
     const requestRevision = document.revision
     const requestGeneration = generation
@@ -137,11 +147,16 @@ export function useWorkspaceLifecycle() {
       setLoading(true)
       prepareSnapshot(document, requestGeneration, controller.signal).then((snapshot) => {
         if (snapshot.revision !== requestRevision || snapshot.generation !== requestGeneration) throw new DOMException('Snapshot superseded', 'AbortError')
-        return fixtureServices.search.search({
+        return services.search.search({
+          sessionId,
           revision: requestRevision,
           generation: requestGeneration,
           strokeCount: countDocumentStrokes(document.layers),
+          pointCount: countDocumentPoints(document.layers),
           textHint,
+          selectedStyle,
+          image: snapshot.image,
+          strokes: buildStrokeSequence(document.layers),
         }, controller.signal)
       }).then((response) => {
         const current = useSearchStore.getState()
@@ -156,7 +171,7 @@ export function useWorkspaceLifecycle() {
       window.clearTimeout(timer)
       controller.abort()
     }
-  }, [document.revision, drawing, generation, hasHydrated, setError, setLoading, setResponse, textHint])
+  }, [document.revision, drawing, generation, hasHydrated, selectedStyle, serviceMode, services, sessionId, setError, setLoading, setResponse, textHint])
 
   useEffect(() => {
     if (theme !== 'system') return

@@ -1,3 +1,4 @@
+import type { EventRequest, PreferencesResponse, PreferencesUpdate } from '@drawable/contracts'
 import { fixtureAssets, fixtureHealth, fixtureSearch } from './fixtures'
 import type { HealthResult, SearchRequest, SearchResponse } from '../lib/types'
 
@@ -10,23 +11,26 @@ export interface AssetClient {
 }
 
 export interface FrontendServices {
-  health: { get(): Promise<HealthResult> }
+  health: { get(signal?: AbortSignal): Promise<HealthResult> }
   search: SearchClient
   assets: AssetClient
-  preferences: Record<string, never>
-  pins: Record<string, never>
-  events: Record<string, never>
-  curation: Record<string, never>
-  benchmarks: Record<string, never>
+  events: { record(event: EventRequest): Promise<void> }
+  preferences: {
+    get(): Promise<PreferencesResponse | null>
+    update(update: PreferencesUpdate): Promise<PreferencesResponse | null>
+  }
+  pins?: Record<string, never>
+  curation?: Record<string, never>
+  benchmarks?: Record<string, never>
 }
 
 export const fixtureServices: FrontendServices = {
   health: { get: async () => fixtureHealth },
   search: { search: fixtureSearch },
   assets: { resolveTrace: async (assetId) => fixtureAssets.find((asset) => asset.id === assetId)?.imageUrl ?? null },
-  preferences: {},
+  events: { record: async () => undefined },
+  preferences: { get: async () => null, update: async () => null },
   pins: {},
-  events: {},
   curation: {},
   benchmarks: {},
 }

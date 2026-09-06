@@ -18,9 +18,32 @@ import { LayerInspector } from './LayerInspector'
 import { useSearchStore } from '../state/searchStore'
 import { useDocumentStore } from '../state/documentStore'
 import { useUiStore } from '../state/uiStore'
+import { useServiceStore } from '../services/serviceRegistry'
+import { UI_STYLE_TO_API } from '../services/liveServices'
+import type { InteractionEvent } from '@drawable/contracts'
 import type { ReferenceAsset, ReferenceGroup } from '../lib/types'
 
 const styleOptions = ['Manga / anime', 'Western ink', 'Realistic', 'Cartoon', 'Gesture']
+
+/** Fire-and-forget interaction logging; failures never interrupt the artist. */
+function recordInteraction(asset: ReferenceAsset, event: InteractionEvent) {
+  const { services, sessionId } = useServiceStore.getState()
+  const revision = useSearchStore.getState().response?.revision ?? 0
+  const style = UI_STYLE_TO_API[asset.style]
+  if (!style) return
+  void services.events.record({ session_id: sessionId, asset_id: asset.id, event, style, query_revision: revision }).catch(() => undefined)
+}
+
+function ServiceBadge() {
+  const mode = useServiceStore((state) => state.mode)
+  const health = useServiceStore((state) => state.health)
+  if (mode === 'probing') return <span className="fixture-badge">Connecting…</span>
+  if (mode === 'fixture') return <span className="fixture-badge" title={health?.message ?? ''}>Fixture</span>
+  if (!health?.ready) return <span className="fixture-badge fixture-badge--error" title={health?.message ?? ''}>API not ready</span>
+  if (health.mode === 'fixture') return <span className="fixture-badge fixture-badge--live" title={health.message}>API fixture</span>
+  if (health.mode === 'cuda') return <span className="fixture-badge fixture-badge--live" title={health.message}>GPU</span>
+  return <span className="fixture-badge fixture-badge--warn" title={health.message}>CPU fallback</span>
+}
 
 function ReferenceCard({ asset }: { asset: ReferenceAsset }) {
   const selected = useSearchStore((state) => state.selectedAsset?.id === asset.id)
@@ -28,23 +51,26 @@ function ReferenceCard({ asset }: { asset: ReferenceAsset }) {
   const setSelectedAsset = useSearchStore((state) => state.setSelectedAsset)
   const togglePin = useSearchStore((state) => state.togglePin)
   const setTrace = useDocumentStore((state) => state.setTrace)
+  const open = () => { setSelectedAsset(asset); recordInteraction(asset, 'open') }
+  const pin = () => { togglePin(asset); recordInteraction(asset, pinned ? 'unpin' : 'pin') }
+  const trace = () => { setTrace(asset.id, asset.fullImageUrl ?? asset.imageUrl); recordInteraction(asset, 'trace') }
 
   return (
     <article className={`reference-card ${selected ? 'is-selected' : ''}`}>
-      <button className="reference-card__media" onClick={() => setSelectedAsset(asset)} aria-label={`View ${asset.title}`}>
+      <button className="reference-card__media" onClick={open} aria-label={`View ${asset.title}`}>
         <img src={asset.imageUrl} alt={asset.title} draggable={false} />
         <span className="match-badge">{asset.match}</span>
       </button>
       <div className="reference-card__meta">
-        <button className="reference-card__title" onClick={() => setSelectedAsset(asset)}>{asset.title}</button>
+        <button className="reference-card__title" onClick={open}>{asset.title}</button>
         <span>{asset.style}</span>
       </div>
       <div className="reference-card__actions">
         <span>{asset.native ? 'Native' : 'Extracted'}</span>
-        <IconButton label={pinned ? 'Unpin reference' : 'Pin reference'} size="small" onClick={() => togglePin(asset)}>
+        <IconButton label={pinned ? 'Unpin reference' : 'Pin reference'} size="small" onClick={pin}>
           {pinned ? <PinOff size={14} /> : <Pin size={14} />}
         </IconButton>
-        <IconButton label="Place on trace layer" size="small" disabled={!asset.traceAllowed} onClick={() => setTrace(asset.id, asset.imageUrl)}>
+        <IconButton label="Place on trace layer" size="small" disabled={!asset.traceAllowed} onClick={trace}>
           <Layers3 size={14} />
         </IconButton>
       </div>
@@ -81,7 +107,7 @@ function ReferenceDetail({ asset }: { asset: ReferenceAsset }) {
         <div><span className="dock-eyebrow">Selected reference</span><h2>{asset.title}</h2></div>
         <IconButton label="Close selected reference" onClick={() => setSelectedAsset(null)}><X size={17} /></IconButton>
       </header>
-      <div className="reference-detail__media"><img src={asset.imageUrl} alt={asset.title} /></div>
+      <div className="reference-detail__media"><img src={asset.fullImageUrl ?? asset.imageUrl} alt={asset.title} /></div>
       <dl>
         <div><dt>Style</dt><dd>{asset.style}</dd></div>
         <div><dt>Scope</dt><dd>{asset.scope}</dd></div>
@@ -89,9 +115,9 @@ function ReferenceDetail({ asset }: { asset: ReferenceAsset }) {
         <div><dt>Artwork</dt><dd>{asset.native ? 'Native line art' : 'Extracted line art'}</dd></div>
       </dl>
       <div className="reference-detail__actions">
-        <button className="button" onClick={() => togglePin(asset)}>{pinned ? <PinOff size={15} /> : <Pin size={15} />}{pinned ? 'Unpin' : 'Pin'}</button>
-        <button className="button button--primary" disabled={!asset.traceAllowed} onClick={() => setTrace(asset.id, asset.imageUrl)}><Layers3 size={15} />Trace</button>
-        <a className="button" href={asset.imageUrl} target="_blank" rel="noreferrer"><ExternalLink size={15} />Open</a>
+        <button className="button" onClick={() => { togglePin(asset); recordInteraction(asset, pinned ? 'unpin' : 'pin') }}>{pinned ? <PinOff size={15} /> : <Pin size={15} />}{pinned ? 'Unpin' : 'Pin'}</button>
+        <button className="button button--primary" disabled={!asset.traceAllowed} onClick={() => { setTrace(asset.id, asset.fullImageUrl ?? asset.imageUrl); recordInteraction(asset, 'trace') }}><Layers3 size={15} />Trace</button>
+        <a className="button" href={asset.fullImageUrl ?? asset.imageUrl} target="_blank" rel="noreferrer"><ExternalLink size={15} />Open</a>
       </div>
     </section>
   )
@@ -119,7 +145,9 @@ export function ReferenceDock() {
     if (!selectedStyle || response.mode !== 'confident') return response.groups
     const best = response.groups.find((group) => group.id === 'best')
     const rest = response.groups.filter((group) => group.id !== 'best')
-    rest.sort((left, right) => Number(right.title === selectedStyle) - Number(left.title === selectedStyle))
+    const apiStyle = UI_STYLE_TO_API[selectedStyle]
+    const matches = (group: ReferenceGroup) => group.title === selectedStyle || (apiStyle !== undefined && group.id === `style:${apiStyle}`)
+    rest.sort((left, right) => Number(matches(right)) - Number(matches(left)))
     return best ? [best, ...rest] : rest
   }, [response, selectedStyle])
 
@@ -156,8 +184,9 @@ export function ReferenceDock() {
       </div>
       <div className="reference-status" role="status">
         <span><StatusDot tone={error ? 'error' : loading ? 'warning' : response?.mode === 'confident' ? 'success' : 'neutral'} />{error ? 'Search interrupted' : loading ? 'Looking at your drawing…' : response?.interpretation ?? 'Waiting for marks'}</span>
-        <span className="fixture-badge">Fixture</span>
+        <ServiceBadge />
       </div>
+      {response?.warning && !error ? <p className="reference-warning" role="note">{response.warning}</p> : null}
       {selectedAsset ? <ReferenceDetail asset={selectedAsset} /> : null}
       <div className="reference-scroll" ref={scrollRef}>
         {error ? (
