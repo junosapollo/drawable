@@ -13,6 +13,7 @@ interface UiState {
   dockWidth: number
   settingsOpen: boolean
   exportOpen: boolean
+  importOpen: boolean
   shortcutsOpen: boolean
   setTheme: (theme: ThemeChoice) => void
   setDockMode: (mode: DockMode) => void
@@ -20,6 +21,7 @@ interface UiState {
   setDockWidth: (width: number) => void
   setSettingsOpen: (open: boolean) => void
   setExportOpen: (open: boolean) => void
+  setImportOpen: (open: boolean) => void
   setShortcutsOpen: (open: boolean) => void
 }
 
@@ -30,6 +32,7 @@ export const useUiStore = create<UiState>((set) => ({
   dockWidth: Number(localStorage.getItem('drawable-dock-width')) || 400,
   settingsOpen: false,
   exportOpen: false,
+  importOpen: false,
   shortcutsOpen: false,
   setTheme: (theme) => {
     localStorage.setItem('drawable-theme', theme)
@@ -46,5 +49,6 @@ export const useUiStore = create<UiState>((set) => ({
   },
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   setExportOpen: (exportOpen) => set({ exportOpen }),
+  setImportOpen: (importOpen) => set({ importOpen }),
   setShortcutsOpen: (shortcutsOpen) => set({ shortcutsOpen }),
 }))

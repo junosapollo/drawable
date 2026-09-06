@@ -5,6 +5,8 @@ import { ToolRail } from '../components/ToolRail'
 import { RestoreDialog, WorkspaceDialogs } from '../components/WorkspaceDialogs'
 import { useWorkspaceLifecycle } from '../services/useWorkspaceLifecycle'
 import { useUiStore } from '../state/uiStore'
+import { X } from 'lucide-react'
+import { IconButton } from '../components/primitives'
 
 export default function DrawPage() {
   const dockWidth = useUiStore((state) => state.dockWidth)
@@ -21,6 +23,7 @@ export default function DrawPage() {
       </main>
       <WorkspaceDialogs />
       <RestoreDialog document={lifecycle.restoreCandidate} onRestore={lifecycle.restore} onDiscard={lifecycle.discard} />
+      {lifecycle.notice ? <div className="operation-notice" role="status"><span>{lifecycle.notice}</span><IconButton label="Dismiss message" size="small" onClick={lifecycle.dismissNotice}><X size={14} /></IconButton></div> : null}
       <div className="phone-blocker">
         <span className="wordmark">drawable</span>
         <h1>A larger workspace is needed</h1>

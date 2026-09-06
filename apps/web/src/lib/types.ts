@@ -29,12 +29,25 @@ export interface StrokeOperation {
   createdAt: number
 }
 
+export interface RasterOperation {
+  id: string
+  kind: 'raster'
+  assetId: string
+  x: number
+  y: number
+  width: number
+  height: number
+  createdAt: number
+}
+
+export type DrawingOperation = StrokeOperation | RasterOperation
+
 export interface DrawingLayer {
   id: string
   name: string
   visible: boolean
   opacity: number
-  operations: StrokeOperation[]
+  operations: DrawingOperation[]
 }
 
 export interface TraceState {
@@ -115,4 +128,44 @@ export interface HealthResult {
   /** True when the result came from the API rather than the local fixture. */
   live?: boolean
   health?: HealthResponse
+}
+
+export interface EmbeddedProjectAsset {
+  id: string
+  mimeType: 'image/png'
+  width: number
+  height: number
+  byteLength: number
+  sha256: string
+  data: string
+}
+
+export interface ExportedDrawingDocument extends Omit<DrawingDocument, 'id' | 'revision' | 'updatedAt' | 'trace'> {
+  trace: Omit<TraceState, 'imageUrl'>
+}
+
+export interface DrawableProjectV1 {
+  format: 'drawable-project'
+  formatVersion: 1
+  applicationVersion: string
+  exportedAt: string
+  document: ExportedDrawingDocument
+  activeLayerId: string
+  assets: EmbeddedProjectAsset[]
+}
+
+export interface StoredRasterAsset {
+  id: string
+  mimeType: 'image/png'
+  width: number
+  height: number
+  sha256: string
+  blob: Blob
+}
+
+export interface PreparedImport {
+  document: DrawingDocument
+  activeLayerId: string
+  assets: StoredRasterAsset[]
+  sourceKind: 'project' | 'png' | 'svg'
 }

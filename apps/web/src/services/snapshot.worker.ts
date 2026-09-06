@@ -9,6 +9,7 @@ interface SnapshotMessage {
   revision: number
   generation: number
   document: DrawingDocument
+  rasterAssets: Array<{ id: string; bitmap: ImageBitmap }>
 }
 
 function drawOperation(context: OffscreenCanvasRenderingContext2D, operation: StrokeOperation) {
@@ -32,8 +33,9 @@ function drawOperation(context: OffscreenCanvasRenderingContext2D, operation: St
 }
 
 self.onmessage = async (event: MessageEvent<SnapshotMessage>) => {
-  const { id, revision, generation, document } = event.data
+  const { id, revision, generation, document, rasterAssets } = event.data
   try {
+    const assets = new Map(rasterAssets.map((asset) => [asset.id, asset.bitmap]))
     const output = new OffscreenCanvas(512, 512)
     const outputContext = output.getContext('2d')
     if (!outputContext) throw new Error('2D worker canvas unavailable')
@@ -45,7 +47,12 @@ self.onmessage = async (event: MessageEvent<SnapshotMessage>) => {
       const layerContext = layerCanvas.getContext('2d')
       if (!layerContext) continue
       layerContext.scale(512 / LOGICAL_SIZE, 512 / LOGICAL_SIZE)
-      for (const operation of layer.operations) drawOperation(layerContext, operation)
+      for (const operation of layer.operations) {
+        if (operation.kind === 'raster') {
+          const bitmap = assets.get(operation.assetId)
+          if (bitmap) layerContext.drawImage(bitmap, operation.x, operation.y, operation.width, operation.height)
+        } else drawOperation(layerContext, operation)
+      }
       outputContext.globalAlpha = layer.opacity
       outputContext.drawImage(layerCanvas, 0, 0)
     }
@@ -54,6 +61,8 @@ self.onmessage = async (event: MessageEvent<SnapshotMessage>) => {
     self.postMessage({ id, revision, generation, image })
   } catch (error) {
     self.postMessage({ id, revision, generation, error: error instanceof Error ? error.message : 'Snapshot failed' })
+  } finally {
+    for (const asset of rasterAssets) asset.bitmap.close()
   }
 }
 

@@ -40,6 +40,8 @@ npm run dev          # Vite; proxies /api → http://127.0.0.1:8000
 Configuration is optional and documented in [`.env.example`](.env.example).
 Nothing needs a secret, an absolute path, or a paid service.
 
+Use **Export drawing → drawable project · Editable** to save a lossless `.drawable` project. **Import sketch** accepts `.drawable`, PNG, and self-contained SVG files and opens each imported sketch as an independent drawing in a new tab.
+
 ## Checks
 
 ```bash

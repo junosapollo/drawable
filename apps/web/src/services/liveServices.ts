@@ -19,6 +19,7 @@ import {
 import type { HealthResult, ReferenceAsset, ReferenceGroup, SearchRequest, SearchResponse } from '../lib/types'
 import { LOGICAL_SIZE } from '../lib/types'
 import { api } from './apiClient'
+import { fixtureAssets } from './fixtures'
 import type { FrontendServices } from './frontendServices'
 
 export const UI_STYLE_TO_API: Record<string, PrimaryStyle> = {
@@ -127,6 +128,14 @@ export const liveServices: FrontendServices = {
         signal,
       )
       return toSearchResponse(response, request)
+    },
+  },
+  assets: {
+    async resolveTrace(assetId: string) {
+      const fixture = fixtureAssets.find((asset) => asset.id === assetId)
+      if (fixture) return fixture.imageUrl
+      if (assetId.startsWith('ls_')) return `/api/v1/assets/${assetId}/line-art`
+      return null
     },
   },
   events: {

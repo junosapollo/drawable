@@ -1,5 +1,5 @@
 import type { StrokeSequence } from '@drawable/contracts'
-import { LOGICAL_SIZE, type DrawingLayer } from './types'
+import { LOGICAL_SIZE, type DrawingLayer, type StrokeOperation } from './types'
 
 /**
  * Flatten visible layers into the wire-format stroke sequence.
@@ -7,9 +7,13 @@ import { LOGICAL_SIZE, type DrawingLayer } from './types'
  * Raw points are sent untouched (the server resamples/simplifies); timestamps
  * are rebased to the first sample so the payload does not leak wall-clock
  * time. Erase operations are included so the server can reproduce the raster.
+ * Raster artwork (imported images) is excluded from stroke sequences.
  */
 export function buildStrokeSequence(layers: DrawingLayer[]): StrokeSequence {
-  const operations = layers.filter((layer) => layer.visible && layer.opacity > 0).flatMap((layer) => layer.operations)
+  const operations = layers
+    .filter((layer) => layer.visible && layer.opacity > 0)
+    .flatMap((layer) => layer.operations)
+    .filter((operation): operation is StrokeOperation => operation.kind === 'stroke')
   const origin = operations[0]?.points[0]?.time ?? 0
   return {
     version: 1,
@@ -30,7 +34,14 @@ export function buildStrokeSequence(layers: DrawingLayer[]): StrokeSequence {
 
 export function countDocumentPoints(layers: DrawingLayer[]): number {
   return layers.reduce(
-    (total, layer) => (layer.visible ? total + layer.operations.reduce((sum, operation) => sum + operation.points.length, 0) : total),
+    (total, layer) =>
+      layer.visible
+        ? total +
+          layer.operations.reduce(
+            (sum, operation) => (operation.kind === 'stroke' ? sum + operation.points.length : sum),
+            0,
+          )
+        : total,
     0,
   )
 }
