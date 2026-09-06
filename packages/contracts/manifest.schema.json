@@ -1,0 +1,415 @@
+{
+  "$defs": {
+    "CropBox": {
+      "additionalProperties": false,
+      "description": "Crop coordinates in source-image pixel space (inclusive-exclusive).",
+      "properties": {
+        "height": {
+          "exclusiveMinimum": 0,
+          "title": "Height",
+          "type": "integer"
+        },
+        "width": {
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "integer"
+        },
+        "x": {
+          "minimum": 0,
+          "title": "X",
+          "type": "integer"
+        },
+        "y": {
+          "minimum": 0,
+          "title": "Y",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "title": "CropBox",
+      "type": "object"
+    },
+    "DatasetSplit": {
+      "description": "Split assignment. Assets derived from one source work never cross splits.",
+      "enum": [
+        "train",
+        "validation",
+        "test",
+        "gallery_only"
+      ],
+      "title": "DatasetSplit",
+      "type": "string"
+    },
+    "HumanReview": {
+      "additionalProperties": false,
+      "properties": {
+        "malformed_anatomy": {
+          "default": false,
+          "title": "Malformed Anatomy",
+          "type": "boolean"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        },
+        "poor_extraction": {
+          "default": false,
+          "title": "Poor Extraction",
+          "type": "boolean"
+        },
+        "quality": {
+          "anyOf": [
+            {
+              "enum": [
+                1,
+                2,
+                3
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quality"
+        },
+        "state": {
+          "$ref": "#/$defs/ReviewState",
+          "default": "unreviewed"
+        }
+      },
+      "title": "HumanReview",
+      "type": "object"
+    },
+    "LineArtOrigin": {
+      "description": "Whether the visible reference is native line art or machine-extracted.",
+      "enum": [
+        "native_line_art",
+        "extracted_line_art"
+      ],
+      "title": "LineArtOrigin",
+      "type": "string"
+    },
+    "ManifestRecord": {
+      "additionalProperties": false,
+      "description": "One gallery or training asset. See the spec's \"Manifest schema\" list.",
+      "properties": {
+        "asset_id": {
+          "pattern": "^ls_[a-z0-9]{2,16}_[a-f0-9]{16}$",
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "checksum": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Checksum",
+          "type": "string"
+        },
+        "crop": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CropBox"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "extraction_model": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Extraction Model"
+        },
+        "extraction_version": {
+          "anyOf": [
+            {
+              "maxLength": 32,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Extraction Version"
+        },
+        "height": {
+          "exclusiveMinimum": 0,
+          "title": "Height",
+          "type": "integer"
+        },
+        "ink_coverage": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Ink Coverage",
+          "type": "number"
+        },
+        "license_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "License Id",
+          "type": "string"
+        },
+        "line_art_path": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Line Art Path",
+          "type": "string"
+        },
+        "origin": {
+          "$ref": "#/$defs/LineArtOrigin"
+        },
+        "original_path": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Original Path",
+          "type": "string"
+        },
+        "person_count": {
+          "maximum": 50,
+          "minimum": 0,
+          "title": "Person Count",
+          "type": "integer"
+        },
+        "phash": {
+          "pattern": "^[a-f0-9]{16}$",
+          "title": "Phash",
+          "type": "string"
+        },
+        "pipeline_version": {
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Pipeline Version",
+          "type": "string"
+        },
+        "primary_style": {
+          "$ref": "#/$defs/PrimaryStyle"
+        },
+        "quality_score": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Quality Score",
+          "type": "number"
+        },
+        "review": {
+          "$ref": "#/$defs/HumanReview"
+        },
+        "scopes": {
+          "items": {
+            "$ref": "#/$defs/ScopeLabel"
+          },
+          "minItems": 1,
+          "title": "Scopes",
+          "type": "array"
+        },
+        "sfw": {
+          "$ref": "#/$defs/SfwDecision"
+        },
+        "source_dataset": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Source Dataset",
+          "type": "string"
+        },
+        "source_item_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Source Item Id",
+          "type": "string"
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Url"
+        },
+        "source_work_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Source Work Id",
+          "type": "string"
+        },
+        "split": {
+          "$ref": "#/$defs/DatasetSplit"
+        },
+        "text_coverage": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Text Coverage",
+          "type": "number"
+        },
+        "thumbnail_path": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Thumbnail Path",
+          "type": "string"
+        },
+        "width": {
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "asset_id",
+        "source_dataset",
+        "source_item_id",
+        "source_work_id",
+        "license_id",
+        "original_path",
+        "line_art_path",
+        "thumbnail_path",
+        "origin",
+        "primary_style",
+        "scopes",
+        "person_count",
+        "sfw",
+        "width",
+        "height",
+        "text_coverage",
+        "ink_coverage",
+        "phash",
+        "quality_score",
+        "split",
+        "enabled",
+        "pipeline_version",
+        "checksum"
+      ],
+      "title": "ManifestRecord",
+      "type": "object"
+    },
+    "PrimaryStyle": {
+      "description": "Exactly one primary style per asset. Also the five reference-panel rows.",
+      "enum": [
+        "manga_anime",
+        "western_ink",
+        "realistic_academic",
+        "cartoon",
+        "gesture_sketch"
+      ],
+      "title": "PrimaryStyle",
+      "type": "string"
+    },
+    "ReviewState": {
+      "description": "Human curation state for an asset.",
+      "enum": [
+        "unreviewed",
+        "accepted",
+        "rejected",
+        "quarantined"
+      ],
+      "title": "ReviewState",
+      "type": "string"
+    },
+    "ScopeLabel": {
+      "description": "What part of a character (or how many characters) an image depicts.\n\nAn asset may carry several scope labels; queries return one probability per\nlabel plus ``unknown``.",
+      "enum": [
+        "eye",
+        "face_head",
+        "hair",
+        "hand",
+        "foot",
+        "upper_body_clothing",
+        "full_body",
+        "multi_character",
+        "unknown"
+      ],
+      "title": "ScopeLabel",
+      "type": "string"
+    },
+    "SfwDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "method": {
+          "enum": [
+            "source_rating",
+            "opennsfw2",
+            "source_rating+opennsfw2",
+            "manual"
+          ],
+          "title": "Method",
+          "type": "string"
+        },
+        "safe": {
+          "title": "Safe",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "safe",
+        "confidence",
+        "method"
+      ],
+      "title": "SfwDecision",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A versioned collection of records plus the dataset/index version stamp.",
+  "properties": {
+    "dataset_version": {
+      "pattern": "^\\d{4}\\.\\d{2}\\.\\d{2}(-[a-z0-9]+)?$",
+      "title": "Dataset Version",
+      "type": "string"
+    },
+    "records": {
+      "items": {
+        "$ref": "#/$defs/ManifestRecord"
+      },
+      "title": "Records",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "dataset_version",
+    "records"
+  ],
+  "title": "Manifest",
+  "type": "object"
+}

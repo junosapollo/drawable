@@ -1,0 +1,1101 @@
+{
+  "schema_version": 1,
+  "dataset_version": "2026.09.06-synthetic",
+  "records": [
+    {
+      "asset_id": "ls_synthetic_ac1f55b7390698a7",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0000",
+      "source_work_id": "synthetic-work-000",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_ac1f55b7390698a7.png",
+      "line_art_path": "line_art/ls_synthetic_ac1f55b7390698a7.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_ac1f55b7390698a7.png",
+      "origin": "native_line_art",
+      "extraction_model": null,
+      "extraction_version": null,
+      "primary_style": "manga_anime",
+      "scopes": [
+        "eye"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": null,
+      "text_coverage": 0.0,
+      "ink_coverage": 0.0393,
+      "phash": "00003c7e7e3c0000",
+      "quality_score": 0.96,
+      "review": {
+        "state": "accepted",
+        "quality": 3,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "train",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "9cba1579d58608b757c9ec1eb3f6e48cccb45c3c04f8d614b61866926fbfd48a"
+    },
+    {
+      "asset_id": "ls_synthetic_4822d3e3a4cefde7",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0001",
+      "source_work_id": "synthetic-work-000",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_4822d3e3a4cefde7.png",
+      "line_art_path": "line_art/ls_synthetic_4822d3e3a4cefde7.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_4822d3e3a4cefde7.png",
+      "origin": "native_line_art",
+      "extraction_model": null,
+      "extraction_version": null,
+      "primary_style": "western_ink",
+      "scopes": [
+        "face_head",
+        "hair"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "text_coverage": 0.0,
+      "ink_coverage": 0.0232,
+      "phash": "003c247e66243c00",
+      "quality_score": 0.628,
+      "review": {
+        "state": "accepted",
+        "quality": 2,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "train",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "8f09f0f97c1f1892ce5a58e13ea0da9c71828b5b874d9a076bcf74229f8ec44d"
+    },
+    {
+      "asset_id": "ls_synthetic_34579de628de2f89",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0002",
+      "source_work_id": "synthetic-work-000",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_34579de628de2f89.png",
+      "line_art_path": "line_art/ls_synthetic_34579de628de2f89.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_34579de628de2f89.png",
+      "origin": "native_line_art",
+      "extraction_model": null,
+      "extraction_version": null,
+      "primary_style": "realistic_academic",
+      "scopes": [
+        "hand"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "text_coverage": 0.0,
+      "ink_coverage": 0.0426,
+      "phash": "00203c3c3c3c0000",
+      "quality_score": 0.691,
+      "review": {
+        "state": "accepted",
+        "quality": 3,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "train",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "5f5389073e1794b8fbd907806b5e4c565daaf71cb7858379a07f517c43689600"
+    },
+    {
+      "asset_id": "ls_synthetic_f1becf0b9d67dcc3",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0003",
+      "source_work_id": "synthetic-work-001",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_f1becf0b9d67dcc3.png",
+      "line_art_path": "line_art/ls_synthetic_f1becf0b9d67dcc3.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_f1becf0b9d67dcc3.png",
+      "origin": "extracted_line_art",
+      "extraction_model": "synthetic-identity",
+      "extraction_version": "1",
+      "primary_style": "cartoon",
+      "scopes": [
+        "foot"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": null,
+      "text_coverage": 0.0,
+      "ink_coverage": 0.0253,
+      "phash": "00203c3c3c3c0000",
+      "quality_score": 0.819,
+      "review": {
+        "state": "accepted",
+        "quality": 3,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "train",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "c16ef5b5835e003320f65969c11db1b399e166837aa82167f451190cb091678c"
+    },
+    {
+      "asset_id": "ls_synthetic_fa19d028df6f073c",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0004",
+      "source_work_id": "synthetic-work-001",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_fa19d028df6f073c.png",
+      "line_art_path": "line_art/ls_synthetic_fa19d028df6f073c.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_fa19d028df6f073c.png",
+      "origin": "native_line_art",
+      "extraction_model": null,
+      "extraction_version": null,
+      "primary_style": "gesture_sketch",
+      "scopes": [
+        "upper_body_clothing"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "text_coverage": 0.0,
+      "ink_coverage": 0.0139,
+      "phash": "1818183c3c000000",
+      "quality_score": 0.971,
+      "review": {
+        "state": "accepted",
+        "quality": 2,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "train",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "a987c7ed3588633ee1eec002534acd976d286e1748bbc3085ddd57bd45cc2bbd"
+    },
+    {
+      "asset_id": "ls_synthetic_b874f621ba9d5bbb",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0005",
+      "source_work_id": "synthetic-work-001",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_b874f621ba9d5bbb.png",
+      "line_art_path": "line_art/ls_synthetic_b874f621ba9d5bbb.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_b874f621ba9d5bbb.png",
+      "origin": "native_line_art",
+      "extraction_model": null,
+      "extraction_version": null,
+      "primary_style": "manga_anime",
+      "scopes": [
+        "full_body"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "text_coverage": 0.0,
+      "ink_coverage": 0.0336,
+      "phash": "1818183c3c181818",
+      "quality_score": 0.71,
+      "review": {
+        "state": "accepted",
+        "quality": 2,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "train",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "cee411586c3c3381aa909cfa1069ac67b68b5e8d57ec314d13b461bcd29fdba9"
+    },
+    {
+      "asset_id": "ls_synthetic_853928686c0aeb72",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0006",
+      "source_work_id": "synthetic-work-002",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_853928686c0aeb72.png",
+      "line_art_path": "line_art/ls_synthetic_853928686c0aeb72.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_853928686c0aeb72.png",
+      "origin": "native_line_art",
+      "extraction_model": null,
+      "extraction_version": null,
+      "primary_style": "western_ink",
+      "scopes": [
+        "multi_character",
+        "full_body"
+      ],
+      "person_count": 2,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": null,
+      "text_coverage": 0.0,
+      "ink_coverage": 0.0285,
+      "phash": "0066662424666666",
+      "quality_score": 0.817,
+      "review": {
+        "state": "accepted",
+        "quality": 2,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "validation",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "392ed83405109709702532ceec099745f539fb8f41290b1b15370999ca318f28"
+    },
+    {
+      "asset_id": "ls_synthetic_01e95ab9a702dde5",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0007",
+      "source_work_id": "synthetic-work-002",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_01e95ab9a702dde5.png",
+      "line_art_path": "line_art/ls_synthetic_01e95ab9a702dde5.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_01e95ab9a702dde5.png",
+      "origin": "extracted_line_art",
+      "extraction_model": "synthetic-identity",
+      "extraction_version": "1",
+      "primary_style": "realistic_academic",
+      "scopes": [
+        "eye"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "text_coverage": 0.0,
+      "ink_coverage": 0.0242,
+      "phash": "00003c7e7e3c0000",
+      "quality_score": 0.821,
+      "review": {
+        "state": "accepted",
+        "quality": 2,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "validation",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "73e1a415eab823c08da905727e79430d0bb01141d5b7725ac3bbed5a01f46b0c"
+    },
+    {
+      "asset_id": "ls_synthetic_ee05835d4e94f4f3",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0008",
+      "source_work_id": "synthetic-work-002",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_ee05835d4e94f4f3.png",
+      "line_art_path": "line_art/ls_synthetic_ee05835d4e94f4f3.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_ee05835d4e94f4f3.png",
+      "origin": "native_line_art",
+      "extraction_model": null,
+      "extraction_version": null,
+      "primary_style": "cartoon",
+      "scopes": [
+        "face_head",
+        "hair"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "text_coverage": 0.0,
+      "ink_coverage": 0.038,
+      "phash": "003c247e66243c00",
+      "quality_score": 0.637,
+      "review": {
+        "state": "accepted",
+        "quality": 2,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "validation",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "c098212b039fe94c0ca7edc19ed24f63bb3930db8af50459d61e2f369f6bf6f4"
+    },
+    {
+      "asset_id": "ls_synthetic_f18e00cd05e073ce",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0009",
+      "source_work_id": "synthetic-work-003",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_f18e00cd05e073ce.png",
+      "line_art_path": "line_art/ls_synthetic_f18e00cd05e073ce.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_f18e00cd05e073ce.png",
+      "origin": "native_line_art",
+      "extraction_model": null,
+      "extraction_version": null,
+      "primary_style": "gesture_sketch",
+      "scopes": [
+        "hand"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": null,
+      "text_coverage": 0.0,
+      "ink_coverage": 0.0253,
+      "phash": "00203c3c3c3c0000",
+      "quality_score": 0.951,
+      "review": {
+        "state": "accepted",
+        "quality": 3,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "test",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "84256b954e675f12bb89c09465d28ccb691a995aa4e02fed38ee8d34a2b957f6"
+    },
+    {
+      "asset_id": "ls_synthetic_cf64f2f64ae8b0a9",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0010",
+      "source_work_id": "synthetic-work-003",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_cf64f2f64ae8b0a9.png",
+      "line_art_path": "line_art/ls_synthetic_cf64f2f64ae8b0a9.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_cf64f2f64ae8b0a9.png",
+      "origin": "native_line_art",
+      "extraction_model": null,
+      "extraction_version": null,
+      "primary_style": "manga_anime",
+      "scopes": [
+        "foot"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "text_coverage": 0.0,
+      "ink_coverage": 0.0426,
+      "phash": "00203c3c3c3c0000",
+      "quality_score": 0.788,
+      "review": {
+        "state": "accepted",
+        "quality": 3,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "test",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "8102ca916e533c0ed4992022293f86b4ecaf721a7f303e6367006de8388360f2"
+    },
+    {
+      "asset_id": "ls_synthetic_f5c5e08584c16dcb",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0011",
+      "source_work_id": "synthetic-work-003",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_f5c5e08584c16dcb.png",
+      "line_art_path": "line_art/ls_synthetic_f5c5e08584c16dcb.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_f5c5e08584c16dcb.png",
+      "origin": "extracted_line_art",
+      "extraction_model": "synthetic-identity",
+      "extraction_version": "1",
+      "primary_style": "western_ink",
+      "scopes": [
+        "upper_body_clothing"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "text_coverage": 0.0,
+      "ink_coverage": 0.034,
+      "phash": "1818183c3c180000",
+      "quality_score": 0.709,
+      "review": {
+        "state": "accepted",
+        "quality": 2,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "test",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "f7231de6fcd9f3f380427c9d304e74fc103716f479f501e3ea49836bb2999ea0"
+    },
+    {
+      "asset_id": "ls_synthetic_ddb865294cadd3a9",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0012",
+      "source_work_id": "synthetic-work-004",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_ddb865294cadd3a9.png",
+      "line_art_path": "line_art/ls_synthetic_ddb865294cadd3a9.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_ddb865294cadd3a9.png",
+      "origin": "native_line_art",
+      "extraction_model": null,
+      "extraction_version": null,
+      "primary_style": "realistic_academic",
+      "scopes": [
+        "full_body"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": null,
+      "text_coverage": 0.0,
+      "ink_coverage": 0.0204,
+      "phash": "1818183c3c181818",
+      "quality_score": 0.795,
+      "review": {
+        "state": "accepted",
+        "quality": 2,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "gallery_only",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "21f1aca1eb4a86015c7eb3b041c81d32dcd739b0d605f8316e6a1a8547ba2b9b"
+    },
+    {
+      "asset_id": "ls_synthetic_7f5d06e63bc7cdea",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0013",
+      "source_work_id": "synthetic-work-004",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_7f5d06e63bc7cdea.png",
+      "line_art_path": "line_art/ls_synthetic_7f5d06e63bc7cdea.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_7f5d06e63bc7cdea.png",
+      "origin": "native_line_art",
+      "extraction_model": null,
+      "extraction_version": null,
+      "primary_style": "cartoon",
+      "scopes": [
+        "multi_character",
+        "full_body"
+      ],
+      "person_count": 2,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "text_coverage": 0.0,
+      "ink_coverage": 0.047,
+      "phash": "0066662424666666",
+      "quality_score": 0.658,
+      "review": {
+        "state": "accepted",
+        "quality": 3,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "gallery_only",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "986afb6c168c82416dff8bb985ec02934a1a5a40f8884b24eb48b90751d1fb45"
+    },
+    {
+      "asset_id": "ls_synthetic_7dca6641543f4dae",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0014",
+      "source_work_id": "synthetic-work-004",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_7dca6641543f4dae.png",
+      "line_art_path": "line_art/ls_synthetic_7dca6641543f4dae.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_7dca6641543f4dae.png",
+      "origin": "native_line_art",
+      "extraction_model": null,
+      "extraction_version": null,
+      "primary_style": "gesture_sketch",
+      "scopes": [
+        "eye"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "text_coverage": 0.0,
+      "ink_coverage": 0.0564,
+      "phash": "00003c7e7e3c0000",
+      "quality_score": 0.615,
+      "review": {
+        "state": "accepted",
+        "quality": 2,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "gallery_only",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "0e63adccc9d1cf0672e6b00edba902b18d7b6dc11cb2421cac6bfcad1580311d"
+    },
+    {
+      "asset_id": "ls_synthetic_65e9563845bf561d",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0015",
+      "source_work_id": "synthetic-work-005",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_65e9563845bf561d.png",
+      "line_art_path": "line_art/ls_synthetic_65e9563845bf561d.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_65e9563845bf561d.png",
+      "origin": "extracted_line_art",
+      "extraction_model": "synthetic-identity",
+      "extraction_version": "1",
+      "primary_style": "manga_anime",
+      "scopes": [
+        "face_head",
+        "hair"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": null,
+      "text_coverage": 0.0,
+      "ink_coverage": 0.038,
+      "phash": "003c247e66243c00",
+      "quality_score": 0.729,
+      "review": {
+        "state": "accepted",
+        "quality": 3,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "train",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "c098212b039fe94c0ca7edc19ed24f63bb3930db8af50459d61e2f369f6bf6f4"
+    },
+    {
+      "asset_id": "ls_synthetic_0b6f8d05af21f613",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0016",
+      "source_work_id": "synthetic-work-005",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_0b6f8d05af21f613.png",
+      "line_art_path": "line_art/ls_synthetic_0b6f8d05af21f613.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_0b6f8d05af21f613.png",
+      "origin": "native_line_art",
+      "extraction_model": null,
+      "extraction_version": null,
+      "primary_style": "western_ink",
+      "scopes": [
+        "hand"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "text_coverage": 0.0,
+      "ink_coverage": 0.0604,
+      "phash": "00203c3c3c3c0000",
+      "quality_score": 0.852,
+      "review": {
+        "state": "accepted",
+        "quality": 2,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "train",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "a45e89735b9dffffa2724a886598d5653de03f819c7cccbbe27af6cf53bb3e94"
+    },
+    {
+      "asset_id": "ls_synthetic_51149df97901651e",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0017",
+      "source_work_id": "synthetic-work-005",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_51149df97901651e.png",
+      "line_art_path": "line_art/ls_synthetic_51149df97901651e.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_51149df97901651e.png",
+      "origin": "native_line_art",
+      "extraction_model": null,
+      "extraction_version": null,
+      "primary_style": "realistic_academic",
+      "scopes": [
+        "foot"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "text_coverage": 0.0,
+      "ink_coverage": 0.0426,
+      "phash": "00203c3c3c3c0000",
+      "quality_score": 0.854,
+      "review": {
+        "state": "accepted",
+        "quality": 2,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "train",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "db643d59354adce8142ab5a51197cb14beda86ba21aa9f3d415113ea80300095"
+    },
+    {
+      "asset_id": "ls_synthetic_e4c3256c86500053",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0018",
+      "source_work_id": "synthetic-work-006",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_e4c3256c86500053.png",
+      "line_art_path": "line_art/ls_synthetic_e4c3256c86500053.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_e4c3256c86500053.png",
+      "origin": "native_line_art",
+      "extraction_model": null,
+      "extraction_version": null,
+      "primary_style": "cartoon",
+      "scopes": [
+        "upper_body_clothing"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": null,
+      "text_coverage": 0.0,
+      "ink_coverage": 0.034,
+      "phash": "1818183c3c180000",
+      "quality_score": 0.735,
+      "review": {
+        "state": "accepted",
+        "quality": 2,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "train",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "f7231de6fcd9f3f380427c9d304e74fc103716f479f501e3ea49836bb2999ea0"
+    },
+    {
+      "asset_id": "ls_synthetic_d00202d823f85d87",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0019",
+      "source_work_id": "synthetic-work-006",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_d00202d823f85d87.png",
+      "line_art_path": "line_art/ls_synthetic_d00202d823f85d87.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_d00202d823f85d87.png",
+      "origin": "extracted_line_art",
+      "extraction_model": "synthetic-identity",
+      "extraction_version": "1",
+      "primary_style": "gesture_sketch",
+      "scopes": [
+        "full_body"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "text_coverage": 0.0,
+      "ink_coverage": 0.0491,
+      "phash": "1818183c3c181818",
+      "quality_score": 0.622,
+      "review": {
+        "state": "accepted",
+        "quality": 3,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "train",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "4edc337c760767eeeb9fb6b2d0e08fe3d2723184a2d5682795949eafafde4a17"
+    },
+    {
+      "asset_id": "ls_synthetic_ba7658caa2cd9ff0",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0020",
+      "source_work_id": "synthetic-work-006",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_ba7658caa2cd9ff0.png",
+      "line_art_path": "line_art/ls_synthetic_ba7658caa2cd9ff0.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_ba7658caa2cd9ff0.png",
+      "origin": "native_line_art",
+      "extraction_model": null,
+      "extraction_version": null,
+      "primary_style": "manga_anime",
+      "scopes": [
+        "multi_character",
+        "full_body"
+      ],
+      "person_count": 2,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "text_coverage": 0.0,
+      "ink_coverage": 0.047,
+      "phash": "0066662424666666",
+      "quality_score": 0.881,
+      "review": {
+        "state": "accepted",
+        "quality": 3,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "train",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "986afb6c168c82416dff8bb985ec02934a1a5a40f8884b24eb48b90751d1fb45"
+    },
+    {
+      "asset_id": "ls_synthetic_6640d01ff5ce9e54",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0021",
+      "source_work_id": "synthetic-work-007",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_6640d01ff5ce9e54.png",
+      "line_art_path": "line_art/ls_synthetic_6640d01ff5ce9e54.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_6640d01ff5ce9e54.png",
+      "origin": "native_line_art",
+      "extraction_model": null,
+      "extraction_version": null,
+      "primary_style": "western_ink",
+      "scopes": [
+        "eye"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": null,
+      "text_coverage": 0.0,
+      "ink_coverage": 0.0564,
+      "phash": "00003c7e7e3c0000",
+      "quality_score": 0.948,
+      "review": {
+        "state": "accepted",
+        "quality": 3,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "validation",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "0e63adccc9d1cf0672e6b00edba902b18d7b6dc11cb2421cac6bfcad1580311d"
+    },
+    {
+      "asset_id": "ls_synthetic_eab7ab098493ca7f",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0022",
+      "source_work_id": "synthetic-work-007",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_eab7ab098493ca7f.png",
+      "line_art_path": "line_art/ls_synthetic_eab7ab098493ca7f.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_eab7ab098493ca7f.png",
+      "origin": "native_line_art",
+      "extraction_model": null,
+      "extraction_version": null,
+      "primary_style": "realistic_academic",
+      "scopes": [
+        "face_head",
+        "hair"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "text_coverage": 0.0,
+      "ink_coverage": 0.0232,
+      "phash": "003c247e66243c00",
+      "quality_score": 0.663,
+      "review": {
+        "state": "accepted",
+        "quality": 3,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": null
+      },
+      "split": "validation",
+      "enabled": true,
+      "pipeline_version": "synthetic-1",
+      "checksum": "8f09f0f97c1f1892ce5a58e13ea0da9c71828b5b874d9a076bcf74229f8ec44d"
+    },
+    {
+      "asset_id": "ls_synthetic_dd4dbf8306f50951",
+      "source_dataset": "synthetic",
+      "source_item_id": "synthetic-item-0023",
+      "source_work_id": "synthetic-work-007",
+      "source_url": null,
+      "license_id": "synthetic-fixture",
+      "original_path": "originals/ls_synthetic_dd4dbf8306f50951.png",
+      "line_art_path": "line_art/ls_synthetic_dd4dbf8306f50951.png",
+      "thumbnail_path": "thumbnails/ls_synthetic_dd4dbf8306f50951.png",
+      "origin": "extracted_line_art",
+      "extraction_model": "synthetic-identity",
+      "extraction_version": "1",
+      "primary_style": "cartoon",
+      "scopes": [
+        "hand"
+      ],
+      "person_count": 1,
+      "sfw": {
+        "safe": true,
+        "confidence": 0.99,
+        "method": "manual"
+      },
+      "width": 256,
+      "height": 256,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "text_coverage": 0.0,
+      "ink_coverage": 0.0426,
+      "phash": "00203c3c3c3c0000",
+      "quality_score": 0.736,
+      "review": {
+        "state": "rejected",
+        "quality": 1,
+        "malformed_anatomy": false,
+        "poor_extraction": false,
+        "note": "synthetic reject"
+      },
+      "split": "validation",
+      "enabled": false,
+      "pipeline_version": "synthetic-1",
+      "checksum": "40e803f8d1d094ee5713887eea6fc049b1ec996f4b86a4767558f4558e12bf3b"
+    }
+  ]
+}

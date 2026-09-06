@@ -73,16 +73,17 @@ export async function fixtureSearch(request: SearchRequest, signal: AbortSignal)
     }, { once: true })
   })
   if (lowerHint.includes('error')) throw new Error('The fixture search was asked to fail.')
+  const base = { revision: request.revision, generation: request.generation }
   if (request.strokeCount === 0) {
-    return { ...request, mode: 'empty', interpretation: 'Blank canvas', groups: [] }
+    return { ...base, mode: 'empty', interpretation: 'Blank canvas', groups: [] }
   }
   if (lowerHint.includes('empty')) {
-    return { ...request, mode: 'insufficient', interpretation: 'No relevant candidates', groups: [] }
+    return { ...base, mode: 'insufficient', interpretation: 'No relevant candidates', groups: [] }
   }
   if (request.strokeCount < 3) {
-    return { ...request, mode: 'provisional', interpretation: 'Reading early marks', groups: provisionalGroups() }
+    return { ...base, mode: 'provisional', interpretation: 'Reading early marks', groups: provisionalGroups() }
   }
-  return { ...request, mode: 'confident', interpretation: lowerHint || 'Character figure', groups: confidentGroups() }
+  return { ...base, mode: 'confident', interpretation: lowerHint || 'Character figure', groups: confidentGroups() }
 }
 
 export const fixtureHealth: HealthResult = {
