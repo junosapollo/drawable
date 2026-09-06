@@ -86,26 +86,190 @@
         "title": "Body_search_api_v1_search_post",
         "type": "object"
       },
+      "CropBox": {
+        "additionalProperties": false,
+        "description": "Crop coordinates in source-image pixel space (inclusive-exclusive).",
+        "properties": {
+          "height": {
+            "exclusiveMinimum": 0.0,
+            "title": "Height",
+            "type": "integer"
+          },
+          "width": {
+            "exclusiveMinimum": 0.0,
+            "title": "Width",
+            "type": "integer"
+          },
+          "x": {
+            "minimum": 0.0,
+            "title": "X",
+            "type": "integer"
+          },
+          "y": {
+            "minimum": 0.0,
+            "title": "Y",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "width",
+          "height"
+        ],
+        "title": "CropBox",
+        "type": "object"
+      },
+      "CurationCandidate": {
+        "additionalProperties": false,
+        "description": "One candidate asset for review.",
+        "properties": {
+          "asset_id": {
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "crop": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CropBox"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "height": {
+            "minimum": 1.0,
+            "title": "Height",
+            "type": "integer"
+          },
+          "line_art_url": {
+            "title": "Line Art Url",
+            "type": "string"
+          },
+          "origin": {
+            "enum": [
+              "native_line_art",
+              "extracted_line_art"
+            ],
+            "title": "Origin",
+            "type": "string"
+          },
+          "primary_style": {
+            "$ref": "#/components/schemas/PrimaryStyle"
+          },
+          "quality_score": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Quality Score",
+            "type": "number"
+          },
+          "review_state": {
+            "enum": [
+              "unreviewed",
+              "accepted",
+              "rejected",
+              "quarantined"
+            ],
+            "title": "Review State",
+            "type": "string"
+          },
+          "scopes": {
+            "items": {
+              "$ref": "#/components/schemas/ScopeLabel"
+            },
+            "title": "Scopes",
+            "type": "array"
+          },
+          "sfw_confidence": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Sfw Confidence",
+            "type": "number"
+          },
+          "sfw_safe": {
+            "title": "Sfw Safe",
+            "type": "boolean"
+          },
+          "source_work_id": {
+            "title": "Source Work Id",
+            "type": "string"
+          },
+          "thumbnail_url": {
+            "title": "Thumbnail Url",
+            "type": "string"
+          },
+          "width": {
+            "minimum": 1.0,
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "asset_id",
+          "primary_style",
+          "scopes",
+          "width",
+          "height",
+          "thumbnail_url",
+          "line_art_url",
+          "origin",
+          "review_state",
+          "quality_score",
+          "sfw_safe",
+          "sfw_confidence",
+          "source_work_id"
+        ],
+        "title": "CurationCandidate",
+        "type": "object"
+      },
       "CurationProgress": {
+        "additionalProperties": false,
+        "description": "Overall review progress plus style/scope breakdowns.",
         "properties": {
           "accepted": {
+            "minimum": 0.0,
             "title": "Accepted",
             "type": "integer"
           },
+          "by_scope": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ScopeBreakdown"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/ScopeLabel"
+            },
+            "title": "By Scope",
+            "type": "object"
+          },
+          "by_style": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/StyleBreakdown"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/PrimaryStyle"
+            },
+            "title": "By Style",
+            "type": "object"
+          },
           "rejected": {
+            "minimum": 0.0,
             "title": "Rejected",
             "type": "integer"
           },
           "remaining": {
+            "minimum": 0.0,
             "title": "Remaining",
             "type": "integer"
           },
           "reviewed": {
+            "minimum": 0.0,
             "title": "Reviewed",
             "type": "integer"
           },
           "target": {
             "default": 2000,
+            "minimum": 0.0,
             "title": "Target",
             "type": "integer"
           }
@@ -114,7 +278,9 @@
           "reviewed",
           "accepted",
           "rejected",
-          "remaining"
+          "remaining",
+          "by_style",
+          "by_scope"
         ],
         "title": "CurationProgress",
         "type": "object"
@@ -345,6 +511,174 @@
         "title": "InteractionEvent",
         "type": "string"
       },
+      "LabelRequest": {
+        "additionalProperties": false,
+        "description": "Body of ``POST /curation/labels``.",
+        "properties": {
+          "asset_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "crop": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CropBox"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "decision": {
+            "enum": [
+              "keep",
+              "reject"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "malformed_anatomy": {
+            "default": false,
+            "title": "Malformed Anatomy",
+            "type": "boolean"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "poor_extraction": {
+            "default": false,
+            "title": "Poor Extraction",
+            "type": "boolean"
+          },
+          "primary_style": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrimaryStyle"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "maximum": 3.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality"
+          },
+          "reviewer": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer"
+          },
+          "scopes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ScopeLabel"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scopes"
+          }
+        },
+        "required": [
+          "asset_id",
+          "decision"
+        ],
+        "title": "LabelRequest",
+        "type": "object"
+      },
+      "LabelResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "decision": {
+            "enum": [
+              "keep",
+              "reject"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "review_quality": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Quality"
+          },
+          "review_state": {
+            "enum": [
+              "unreviewed",
+              "accepted",
+              "rejected",
+              "quarantined"
+            ],
+            "title": "Review State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "asset_id",
+          "decision",
+          "review_state",
+          "review_quality",
+          "enabled",
+          "created_at"
+        ],
+        "title": "LabelResponse",
+        "type": "object"
+      },
       "LineArtOrigin": {
         "description": "Whether the visible reference is native line art or machine-extracted.",
         "enum": [
@@ -483,6 +817,40 @@
         ],
         "title": "PrimaryStyle",
         "type": "string"
+      },
+      "ScopeBreakdown": {
+        "additionalProperties": false,
+        "description": "Reviewed/accepted/rejected counts for a single scope bucket.",
+        "properties": {
+          "accepted": {
+            "minimum": 0.0,
+            "title": "Accepted",
+            "type": "integer"
+          },
+          "rejected": {
+            "minimum": 0.0,
+            "title": "Rejected",
+            "type": "integer"
+          },
+          "remaining": {
+            "minimum": 0.0,
+            "title": "Remaining",
+            "type": "integer"
+          },
+          "reviewed": {
+            "minimum": 0.0,
+            "title": "Reviewed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "reviewed",
+          "accepted",
+          "rejected",
+          "remaining"
+        ],
+        "title": "ScopeBreakdown",
+        "type": "object"
       },
       "ScopeLabel": {
         "description": "What part of a character (or how many characters) an image depicts.\n\nAn asset may carry several scope labels; queries return one probability per\nlabel plus ``unknown``.",
@@ -727,6 +1095,47 @@
         "title": "SearchTiming",
         "type": "object"
       },
+      "SnapshotResponse": {
+        "additionalProperties": false,
+        "description": "Body of ``POST /curation/snapshots``.",
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "label_count": {
+            "title": "Label Count",
+            "type": "integer"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "snapshot_id": {
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "style_breakdown": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/PrimaryStyle"
+            },
+            "title": "Style Breakdown",
+            "type": "object"
+          }
+        },
+        "required": [
+          "snapshot_id",
+          "path",
+          "label_count",
+          "style_breakdown",
+          "created_at"
+        ],
+        "title": "SnapshotResponse",
+        "type": "object"
+      },
       "Stroke": {
         "additionalProperties": false,
         "properties": {
@@ -854,6 +1263,40 @@
         "title": "StyleAffinity",
         "type": "object"
       },
+      "StyleBreakdown": {
+        "additionalProperties": false,
+        "description": "Reviewed/accepted/rejected counts for a single style family.",
+        "properties": {
+          "accepted": {
+            "minimum": 0.0,
+            "title": "Accepted",
+            "type": "integer"
+          },
+          "rejected": {
+            "minimum": 0.0,
+            "title": "Rejected",
+            "type": "integer"
+          },
+          "remaining": {
+            "minimum": 0.0,
+            "title": "Remaining",
+            "type": "integer"
+          },
+          "reviewed": {
+            "minimum": 0.0,
+            "title": "Reviewed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "reviewed",
+          "accepted",
+          "rejected",
+          "remaining"
+        ],
+        "title": "StyleBreakdown",
+        "type": "object"
+      },
       "StyleSelection": {
         "description": "``selected_style`` multipart value: a style enum or ``all``.",
         "enum": [
@@ -963,14 +1406,36 @@
     "/api/v1/curation/labels": {
       "post": {
         "operationId": "write_label_api_v1_curation_labels_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabelRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "200": {
+          "201": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/LabelResponse"
+                }
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Write Label",
@@ -982,14 +1447,64 @@
     "/api/v1/curation/next": {
       "get": {
         "operationId": "next_candidate_api_v1_curation_next_get",
+        "parameters": [
+          {
+            "description": "Filter by primary style",
+            "in": "query",
+            "name": "style",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PrimaryStyle"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by primary style",
+              "title": "Style"
+            }
+          },
+          {
+            "description": "Filter by scope bucket",
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ScopeLabel"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by scope bucket",
+              "title": "Scope"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CurationCandidate"
+                }
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Next Candidate",
@@ -1023,10 +1538,12 @@
       "post": {
         "operationId": "export_snapshot_api_v1_curation_snapshots_post",
         "responses": {
-          "200": {
+          "201": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotResponse"
+                }
               }
             },
             "description": "Successful Response"

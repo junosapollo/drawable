@@ -8,16 +8,16 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspace=@drawable/web",
-    "dev:api": "services/api/.venv/bin/python -m linescout_api.main",
+    "dev:api": "node scripts/run-python.mjs services/api/.venv -m linescout_api.main",
     "dev:all": "node scripts/dev-all.mjs",
     "build": "npm run build --workspace=@drawable/web",
     "check": "npm run check --workspace=@drawable/contracts && npm run check --workspace=@drawable/web",
     "test": "npm run test --workspace=@drawable/web",
     "test:e2e": "npm run test:e2e --workspace=@drawable/web",
-    "contracts": "services/api/.venv/bin/python scripts/export_openapi.py && npm run generate --workspace=@drawable/contracts",
-    "setup:py": "bash scripts/setup-python.sh",
-    "check:py": "bash scripts/check-python.sh",
-    "smoke": "services/api/.venv/bin/python scripts/smoke_search.py"
+    "contracts": "node scripts/run-python.mjs services/api/.venv scripts/export_openapi.py && npm run generate --workspace=@drawable/contracts",
+    "setup:py": "node scripts/setup-python.mjs",
+    "check:py": "node scripts/check-python.mjs",
+    "smoke": "node scripts/run-python.mjs services/api/.venv scripts/smoke_search.py"
   },
   "engines": {
     "node": ">=22"
