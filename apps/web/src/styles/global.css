@@ -419,3 +419,10 @@ kbd { min-width: 28px; padding: 3px 5px; border: 1px solid var(--border-strong);
 }
 
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+.fixture-badge--live { color: var(--success, #2e9e5b); border-color: currentColor; }
+.fixture-badge--warn { color: var(--warning, #c98a1b); border-color: currentColor; }
+.fixture-badge--error { color: var(--danger, #d64545); border-color: currentColor; }
+.reference-warning { margin: 0; padding: 6px 16px; font-size: 12px; color: var(--text-muted, #74716b); }
+.setup-warnings { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; }
+.setup-warnings li { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--warning, #c98a1b); }

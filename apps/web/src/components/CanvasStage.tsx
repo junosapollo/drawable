@@ -145,6 +145,7 @@ export function CanvasStage() {
       y: Math.min(LOGICAL_SIZE, Math.max(0, ((event.clientY - rect.top) / rect.height) * LOGICAL_SIZE)),
       pressure: event.pointerType === 'mouse' ? 0.5 : Math.max(0.01, event.pressure || 0.5),
       time: performance.now(),
+      pointerType: event.pointerType === 'pen' || event.pointerType === 'touch' ? event.pointerType : 'mouse',
     }
   }
 

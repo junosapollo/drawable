@@ -2,13 +2,22 @@
   "name": "drawable",
   "private": true,
   "version": "0.1.0",
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "npm run dev --workspace=@drawable/web",
+    "dev:api": "services/api/.venv/bin/python -m linescout_api.main",
+    "dev:all": "node scripts/dev-all.mjs",
     "build": "npm run build --workspace=@drawable/web",
-    "check": "npm run check --workspace=@drawable/web",
+    "check": "npm run check --workspace=@drawable/contracts && npm run check --workspace=@drawable/web",
     "test": "npm run test --workspace=@drawable/web",
-    "test:e2e": "npm run test:e2e --workspace=@drawable/web"
+    "test:e2e": "npm run test:e2e --workspace=@drawable/web",
+    "contracts": "services/api/.venv/bin/python scripts/export_openapi.py && npm run generate --workspace=@drawable/contracts",
+    "setup:py": "bash scripts/setup-python.sh",
+    "check:py": "bash scripts/check-python.sh",
+    "smoke": "services/api/.venv/bin/python scripts/smoke_search.py"
   },
   "engines": {
     "node": ">=22"
