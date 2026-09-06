@@ -190,10 +190,73 @@ export interface components {
             /** Text Hint */
             text_hint?: string | null;
         };
-        /** CurationProgress */
+        /**
+         * CropBox
+         * @description Crop coordinates in source-image pixel space (inclusive-exclusive).
+         */
+        CropBox: {
+            /** Height */
+            height: number;
+            /** Width */
+            width: number;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
+        /**
+         * CurationCandidate
+         * @description One candidate asset for review.
+         */
+        CurationCandidate: {
+            /** Asset Id */
+            asset_id: string;
+            crop?: components["schemas"]["CropBox"] | null;
+            /** Height */
+            height: number;
+            /** Line Art Url */
+            line_art_url: string;
+            /**
+             * Origin
+             * @enum {string}
+             */
+            origin: "native_line_art" | "extracted_line_art";
+            primary_style: components["schemas"]["PrimaryStyle"];
+            /** Quality Score */
+            quality_score: number;
+            /**
+             * Review State
+             * @enum {string}
+             */
+            review_state: "unreviewed" | "accepted" | "rejected" | "quarantined";
+            /** Scopes */
+            scopes: components["schemas"]["ScopeLabel"][];
+            /** Sfw Confidence */
+            sfw_confidence: number;
+            /** Sfw Safe */
+            sfw_safe: boolean;
+            /** Source Work Id */
+            source_work_id: string;
+            /** Thumbnail Url */
+            thumbnail_url: string;
+            /** Width */
+            width: number;
+        };
+        /**
+         * CurationProgress
+         * @description Overall review progress plus style/scope breakdowns.
+         */
         CurationProgress: {
             /** Accepted */
             accepted: number;
+            /** By Scope */
+            by_scope: {
+                [key: string]: components["schemas"]["ScopeBreakdown"];
+            };
+            /** By Style */
+            by_style: {
+                [key: string]: components["schemas"]["StyleBreakdown"];
+            };
             /** Rejected */
             rejected: number;
             /** Remaining */
@@ -284,6 +347,62 @@ export interface components {
          */
         InteractionEvent: "open" | "pin" | "unpin" | "trace";
         /**
+         * LabelRequest
+         * @description Body of ``POST /curation/labels``.
+         */
+        LabelRequest: {
+            /** Asset Id */
+            asset_id: string;
+            crop?: components["schemas"]["CropBox"] | null;
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "keep" | "reject";
+            /**
+             * Malformed Anatomy
+             * @default false
+             */
+            malformed_anatomy: boolean;
+            /** Note */
+            note?: string | null;
+            /**
+             * Poor Extraction
+             * @default false
+             */
+            poor_extraction: boolean;
+            primary_style?: components["schemas"]["PrimaryStyle"] | null;
+            /** Quality */
+            quality?: number | null;
+            /** Reviewer */
+            reviewer?: string | null;
+            /** Scopes */
+            scopes?: components["schemas"]["ScopeLabel"][] | null;
+        };
+        /** LabelResponse */
+        LabelResponse: {
+            /** Asset Id */
+            asset_id: string;
+            /** Created At */
+            created_at: string;
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "keep" | "reject";
+            /** Enabled */
+            enabled: boolean;
+            /** Id */
+            id: number;
+            /** Review Quality */
+            review_quality: number | null;
+            /**
+             * Review State
+             * @enum {string}
+             */
+            review_state: "unreviewed" | "accepted" | "rejected" | "quarantined";
+        };
+        /**
          * LineArtOrigin
          * @description Whether the visible reference is native line art or machine-extracted.
          * @enum {string}
@@ -340,6 +459,20 @@ export interface components {
          * @enum {string}
          */
         PrimaryStyle: "manga_anime" | "western_ink" | "realistic_academic" | "cartoon" | "gesture_sketch";
+        /**
+         * ScopeBreakdown
+         * @description Reviewed/accepted/rejected counts for a single scope bucket.
+         */
+        ScopeBreakdown: {
+            /** Accepted */
+            accepted: number;
+            /** Rejected */
+            rejected: number;
+            /** Remaining */
+            remaining: number;
+            /** Reviewed */
+            reviewed: number;
+        };
         /**
          * ScopeLabel
          * @description What part of a character (or how many characters) an image depicts.
@@ -428,6 +561,24 @@ export interface components {
             /** Total Ms */
             total_ms: number;
         };
+        /**
+         * SnapshotResponse
+         * @description Body of ``POST /curation/snapshots``.
+         */
+        SnapshotResponse: {
+            /** Created At */
+            created_at: string;
+            /** Label Count */
+            label_count: number;
+            /** Path */
+            path: string;
+            /** Snapshot Id */
+            snapshot_id: string;
+            /** Style Breakdown */
+            style_breakdown: {
+                [key: string]: number;
+            };
+        };
         /** Stroke */
         Stroke: {
             /**
@@ -486,6 +637,20 @@ export interface components {
              */
             affinity: number;
             style: components["schemas"]["PrimaryStyle"];
+        };
+        /**
+         * StyleBreakdown
+         * @description Reviewed/accepted/rejected counts for a single style family.
+         */
+        StyleBreakdown: {
+            /** Accepted */
+            accepted: number;
+            /** Rejected */
+            rejected: number;
+            /** Remaining */
+            remaining: number;
+            /** Reviewed */
+            reviewed: number;
         };
         /**
          * StyleSelection
@@ -552,22 +717,40 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabelRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["LabelResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
     };
     next_candidate_api_v1_curation_next_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Filter by scope bucket */
+                scope?: components["schemas"]["ScopeLabel"] | null;
+                /** @description Filter by primary style */
+                style?: components["schemas"]["PrimaryStyle"] | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -580,7 +763,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["CurationCandidate"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -615,12 +807,12 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["SnapshotResponse"];
                 };
             };
         };
@@ -785,9 +977,14 @@ type ReadonlyArray<T> = [
 ] extends [
     unknown[]
 ] ? Readonly<Exclude<T, undefined>> : Readonly<Exclude<T, undefined>[]>;
+export const curationCandidateOriginValues: ReadonlyArray<FlattenedDeepRequired<components>["schemas"]["CurationCandidate"]["origin"]> = ["native_line_art", "extracted_line_art"];
+export const curationCandidateReview_stateValues: ReadonlyArray<FlattenedDeepRequired<components>["schemas"]["CurationCandidate"]["review_state"]> = ["unreviewed", "accepted", "rejected", "quarantined"];
 export const healthResponseDeviceValues: ReadonlyArray<FlattenedDeepRequired<components>["schemas"]["HealthResponse"]["device"]> = ["cuda", "cpu"];
 export const healthResponseWarmupValues: ReadonlyArray<FlattenedDeepRequired<components>["schemas"]["HealthResponse"]["warmup"]> = ["pending", "complete", "skipped"];
 export const interactionEventValues: ReadonlyArray<FlattenedDeepRequired<components>["schemas"]["InteractionEvent"]> = ["open", "pin", "unpin", "trace"];
+export const labelRequestDecisionValues: ReadonlyArray<FlattenedDeepRequired<components>["schemas"]["LabelRequest"]["decision"]> = ["keep", "reject"];
+export const labelResponseDecisionValues: ReadonlyArray<FlattenedDeepRequired<components>["schemas"]["LabelResponse"]["decision"]> = ["keep", "reject"];
+export const labelResponseReview_stateValues: ReadonlyArray<FlattenedDeepRequired<components>["schemas"]["LabelResponse"]["review_state"]> = ["unreviewed", "accepted", "rejected", "quarantined"];
 export const lineArtOriginValues: ReadonlyArray<FlattenedDeepRequired<components>["schemas"]["LineArtOrigin"]> = ["native_line_art", "extracted_line_art"];
 export const primaryStyleValues: ReadonlyArray<FlattenedDeepRequired<components>["schemas"]["PrimaryStyle"]> = ["manga_anime", "western_ink", "realistic_academic", "cartoon", "gesture_sketch"];
 export const scopeLabelValues: ReadonlyArray<FlattenedDeepRequired<components>["schemas"]["ScopeLabel"]> = ["eye", "face_head", "hair", "hand", "foot", "upper_body_clothing", "full_body", "multi_character", "unknown"];

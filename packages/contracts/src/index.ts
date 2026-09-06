@@ -105,6 +105,15 @@ export type PreferencesResponse = Schemas['PreferencesResponse']
 export type PreferencesUpdate = Schemas['PreferencesUpdate']
 export type StyleAffinity = Schemas['StyleAffinity']
 
+// ----------------------------------------------------------------- curation
+
+export type CropBox = Schemas['CropBox']
+export type CurationCandidate = Schemas['CurationCandidate']
+export type CurationProgress = Schemas['CurationProgress']
+export type LabelRequest = Schemas['LabelRequest']
+export type LabelResponse = Schemas['LabelResponse']
+export type SnapshotResponse = Schemas['SnapshotResponse']
+
 export type ErrorResponse = { error: { code: string; message: string; field?: string | null } }
 
 /** Multipart fields for `POST /api/v1/search`; `image` and `strokes` are Blobs. */

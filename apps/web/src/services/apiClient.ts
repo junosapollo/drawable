@@ -47,6 +47,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await response.json()) as T
 }
 
+// Internal helpers are re-exported so the same fetch-and-parse pipeline is
+// used by the curation client. Tests can also spy on this entry point.
+export { request as apiRequest }
+
 function json(body: unknown, method: 'POST' | 'PUT'): RequestInit {
   return { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
 }
