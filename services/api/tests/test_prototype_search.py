@@ -103,8 +103,14 @@ def test_preview_paths_reject_symlinks_and_traversal(tmp_path) -> None:
     image = tmp_path / "image.png"
     image.write_bytes(png(ink=True))
     assert private_file(tmp_path, "image.png") == image
-    (tmp_path / "alias.png").symlink_to(image)
+    try:
+        (tmp_path / "alias.png").symlink_to(image)
+        symlink_created = True
+    except OSError:
+        symlink_created = False
     for relative in ("alias.png", "../image.png", "/image.png", "sub/../image.png"):
+        if relative == "alias.png" and not symlink_created:
+            continue
         with pytest.raises(ValueError):
             private_file(tmp_path, relative)
 

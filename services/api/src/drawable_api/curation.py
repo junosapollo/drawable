@@ -460,8 +460,11 @@ def authorized_preview_path(
     relative_root = metadata.get("relative_root")
     if not isinstance(relative_root, str) or not relative_root:
         raise IntakeError("Asset has no cataloged relative root")
-    relative_path = Path(relative_root) / row["relative_path"]
-    if relative_path.is_absolute() or ".." in relative_path.parts or "\\" in str(relative_path):
+    raw_relative = str(row["relative_path"])
+    if "\\" in relative_root or "\\" in raw_relative:
+        raise IntakeError("Asset has an unsafe relative path")
+    relative_path = Path(relative_root) / raw_relative
+    if relative_path.is_absolute() or ".." in relative_path.parts:
         raise IntakeError("Asset has an unsafe relative path")
     root = settings.data_root.resolve(strict=True)
     candidate = root / relative_path
@@ -649,8 +652,11 @@ def create_curation_snapshot(
         relative_root = metadata.get("relative_root")
         if not isinstance(relative_root, str):
             raise IntakeError(f"Eligible candidate {row['asset_id']} has no catalog-relative root")
-        relative = PurePosixPath(relative_root) / PurePosixPath(row["relative_path"])
-        if relative.is_absolute() or ".." in relative.parts or "\\" in str(relative):
+        raw_relative = str(row["relative_path"])
+        if "\\" in relative_root or "\\" in raw_relative:
+            raise IntakeError(f"Eligible candidate {row['asset_id']} has an unsafe catalog path")
+        relative = PurePosixPath(relative_root) / PurePosixPath(raw_relative)
+        if relative.is_absolute() or ".." in relative.parts:
             raise IntakeError(f"Eligible candidate {row['asset_id']} has an unsafe catalog path")
         review = metadata.get("curation_review")
         labels = metadata.get("labels")
@@ -762,7 +768,7 @@ def create_curation_snapshot(
         if directory.is_symlink():
             raise IntakeError("Symbolic links are not permitted in private snapshot storage")
         directory.mkdir(parents=True, exist_ok=True, mode=0o700)
-        if stat.S_IMODE(directory.stat().st_mode) & 0o077:
+        if os.name != "nt" and (stat.S_IMODE(directory.stat().st_mode) & 0o077):
             raise IntakeError(
                 "Private snapshot storage permissions must be restricted to the current user"
             )

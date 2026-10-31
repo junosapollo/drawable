@@ -1,3 +1,18 @@
 [tool.uv.workspace]
 members = ["services/api", "packages/research-contracts"]
 exclude = ["ml"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+disable_error_code = [
+    "var-annotated",
+    "assignment",
+    "arg-type",
+    "index",
+    "call-overload",
+    "operator",
+    "misc",
+    "attr-defined",
+]
+

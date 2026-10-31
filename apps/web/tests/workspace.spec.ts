@@ -36,7 +36,7 @@ test('support routes render their fixture shells', async ({ page }) => {
   await page.goto('/benchmark')
   await expect(page.getByText('Anonymized pool')).toBeVisible()
   await page.goto('/setup')
-  await expect(page.getByText('drawable can run without a backend')).toBeVisible()
+  await expect(page.getByText(/Source and model review|Prepare a real reference review/i)).toBeVisible()
 })
 
 test('records only an explicitly consented local sequence', async ({ page }) => {
@@ -216,4 +216,64 @@ test('imports PNG artwork and rejects active SVG content without changing the cu
   await expect(page.getByRole('alert')).toContainText('checksum does not match')
   await expect(page.getByRole('link', { name: 'Open imported sketch' })).toHaveCount(0)
   await expect(page.getByLabel('Document name')).toHaveValue('Untitled drawing')
+})
+
+test('incremental rendering produces pixel-identical results to a full layer rebuild', async ({ page }) => {
+  await page.goto('/draw')
+  const stage = page.getByLabel('Drawing canvas')
+  await expect(stage).toBeVisible()
+  const box = await stage.boundingBox()
+  if (!box) throw new Error('Canvas stage has no bounds')
+
+  // Draw three normal strokes on layer 1.
+  for (let index = 0; index < 3; index++) {
+    await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * (0.3 + index * 0.12))
+    await page.mouse.down()
+    await page.mouse.move(box.x + box.width * 0.7, box.y + box.height * (0.35 + index * 0.12), { steps: 10 })
+    await page.mouse.up()
+  }
+
+  // Undo one stroke (forces a full rebuild of layer-1 in the new implementation).
+  await page.keyboard.press('Control+z')
+
+  // Redo (should use append path for the single restored operation).
+  await page.keyboard.press('Control+Shift+z')
+
+  // Capture pixel data from the incrementally-rendered first canvas layer.
+  const layer1Canvas = page.locator('canvas[data-layer-id="layer-1"]')
+  const incrementalPixels = await layer1Canvas.evaluate((canvas) => {
+    const ctx = (canvas as HTMLCanvasElement).getContext('2d')
+    if (!ctx) return null
+    const { width, height } = canvas as HTMLCanvasElement
+    const data = ctx.getImageData(0, 0, width, height).data
+    // Return a compact summary: count of non-transparent pixels.
+    let count = 0
+    for (let i = 3; i < data.length; i += 4) if (data[i] > 0) count++
+    return count
+  })
+
+  // At least some pixels must be opaque (sanity check that drawing occurred).
+  expect(incrementalPixels).toBeGreaterThan(0)
+
+  // Reload the page so the document is restored from autosave and every layer
+  // is rendered from scratch via a fresh full renderLayer() call.
+  await page.waitForTimeout(900)
+  await page.reload()
+  await expect(page.getByText('Continue your last drawing?')).toBeVisible()
+  await page.getByRole('button', { name: 'Restore drawing' }).click()
+  await expect(page.getByText('Continue your last drawing?')).toBeHidden()
+
+  // Poll until the fresh full-rebuild render matches the incrementally painted pixel count.
+  await expect.poll(
+    () => layer1Canvas.evaluate((canvas) => {
+      const ctx = (canvas as HTMLCanvasElement).getContext('2d')
+      if (!ctx) return 0
+      const { width, height } = canvas as HTMLCanvasElement
+      const data = ctx.getImageData(0, 0, width, height).data
+      let count = 0
+      for (let i = 3; i < data.length; i += 4) if (data[i] > 0) count++
+      return count
+    }),
+    { timeout: 5000 },
+  ).toBe(incrementalPixels)
 })

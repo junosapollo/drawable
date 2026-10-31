@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { appendM0EffortChunk, M0_EFFORT_CATEGORIES, type M0EffortCategory } from '../services/m0Effort'
 
 interface ActiveSegment {
@@ -16,7 +17,11 @@ const LABELS: Record<M0EffortCategory, string> = {
   'evidence-review': 'Evidence review',
 }
 
+const M0_TRACKED_ROUTES = ['/m0', '/record']
+
 export function M0EffortTracker() {
+  const location = useLocation()
+  const isTrackedRoute = M0_TRACKED_ROUTES.includes(location.pathname)
   const [category, setCategory] = useState<M0EffortCategory>('asset-review')
   const [running, setRunning] = useState(false)
   const [activeMs, setActiveMs] = useState(0)
@@ -97,6 +102,8 @@ export function M0EffortTracker() {
 
   const elapsed = Math.floor(activeMs / 1000)
   const label = `${String(Math.floor(elapsed / 3600)).padStart(2, '0')}:${String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}`
+
+  if (!isTrackedRoute) return null
 
   return (
     <aside className="m0-effort-tracker" aria-label="M0 active effort timer">

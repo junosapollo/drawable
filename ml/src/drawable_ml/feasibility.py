@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import math
 import os
-import resource
+
+try:
+    import resource
+except ImportError:
+    resource = None
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -252,7 +256,9 @@ def measure_frozen_cpu(
         del encoder
         del vector
         del elapsed
-    peak_rss_mib = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+    peak_rss_mib = (
+        resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 if resource is not None else 0.0
+    )
     model_file_bytes = sum(row["file_bytes"] for row in model_verification["models"])
     produced_at = datetime.now(UTC)
     measurements: dict[str, int | float | bool | str] = {

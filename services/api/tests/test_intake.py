@@ -4,6 +4,7 @@ import copy
 import hashlib
 import io
 import json
+import os
 import sqlite3
 import warnings
 import zipfile
@@ -41,6 +42,7 @@ from drawable_api.intake import (
 )
 from drawable_api.museum import fetch_museum_candidates, refresh_museum_manifest
 from drawable_api.readiness import build_training_readiness
+from drawable_api.review_workspace import ReviewWorkspace
 from drawable_api.sampling import build_pilot_yield_sample
 from drawable_api.schemas import CurationCropRequest, CurationReviewRequest, CurationSnapshotRequest
 from drawable_api.settings import Settings
@@ -596,13 +598,15 @@ def test_local_curation_is_opt_in_revision_safe_and_keeps_review_history(tmp_pat
     path = tree / "candidate.png"
     Image.new("RGB", (32, 48), color="white").save(path)
     relative_path = "dogmatism/sketch/candidate.png"
+    database_path = root / "metadata.sqlite3"
+    migrate(database_path)
+    settings = Settings(root, "fixture", database_path, True)
+    review_workspace = ReviewWorkspace(settings)
     metadata = {
         "relative_root": "legacy",
         "relative_path": relative_path,
-        "source_registry_sha256": sha256_file(REPOSITORY_ROOT / "config" / "sources.json"),
-        "anita_work_terms_sha256": sha256_file(
-            REPOSITORY_ROOT / "config" / "anita-work-terms.json"
-        ),
+        "source_registry_sha256": sha256_file(review_workspace.sources_path),
+        "anita_work_terms_sha256": sha256_file(review_workspace.works_path),
         "work_id": "dogmatism",
         "group_id": "anita:artist:anita-artist-test",
         "candidate_type": "sketch",
@@ -627,8 +631,6 @@ def test_local_curation_is_opt_in_revision_safe_and_keeps_review_history(tmp_pat
         "learning_split": "unassigned",
         "gallery_member": False,
     }
-    database_path = root / "metadata.sqlite3"
-    migrate(database_path)
     with connect(database_path) as db:
         db.execute(
             "INSERT INTO assets(asset_id, source_id, relative_path, sha256, byte_length, media_type, width, height, group_id, rights_status, state, revision, metadata_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -1262,7 +1264,8 @@ def test_manual_crop_is_immutable_idempotent_and_family_split_is_atomic(tmp_path
         root / "reports" / "private" / "curation-snapshots" / f"{snapshot.snapshot_id}.json"
     )
     assert snapshot_path.is_file()
-    assert snapshot_path.stat().st_mode & 0o077 == 0
+    if os.name != "nt":
+        assert snapshot_path.stat().st_mode & 0o077 == 0
     replayed_snapshot = create_curation_snapshot(
         settings, snapshot_request, registry_path=registry_path
     )
@@ -1387,7 +1390,7 @@ def test_cloud_package_requires_rights_and_cloud_consent(tmp_path: Path) -> None
 
 def test_sqlite_migration_and_future_version_guard(tmp_path: Path) -> None:
     database = tmp_path / "metadata.sqlite3"
-    assert migrate(database) == SCHEMA_VERSION == 3
+    assert migrate(database) == SCHEMA_VERSION == 4
     assert migrate(database) == SCHEMA_VERSION
     with sqlite3.connect(database) as connection:
         connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION + 1}")
@@ -1429,7 +1432,7 @@ def test_sqlite_v2_split_migration_preserves_history_and_allows_reassignment(
             ),
         )
         connection.execute("PRAGMA user_version = 2")
-    assert migrate(database) == 3
+    assert migrate(database) == SCHEMA_VERSION
     with connect(database) as connection:
         old = connection.execute("SELECT * FROM family_split_assignments").fetchone()
         assert old["assignment_id"] == "old-assignment"

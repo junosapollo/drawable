@@ -5,7 +5,8 @@ import json
 from types import SimpleNamespace
 
 import pytest
-import torch
+
+torch = pytest.importorskip("torch")
 from drawable_research_contracts import CurationSnapshotV1
 from PIL import Image
 from test_snapshot_cli import make_snapshot

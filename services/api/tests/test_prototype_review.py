@@ -128,6 +128,9 @@ def test_prototype_batch_is_bounded_repeatable_and_retains_reviews(tmp_path: Pat
 def test_prototype_batch_rejects_symbolic_links(tmp_path: Path) -> None:
     settings = prototype_settings(tmp_path)
     migrate(settings.metadata_db)
-    (tmp_path / "AnitaDataset" / "hero" / "sketch" / "outside").symlink_to(tmp_path, target_is_directory=True)
+    try:
+        (tmp_path / "AnitaDataset" / "hero" / "sketch" / "outside").symlink_to(tmp_path, target_is_directory=True)
+    except OSError as err:
+        pytest.skip(f"Symbolic links not permitted in this OS environment: {err}")
     with pytest.raises(IntakeError, match="symbolic links"):
         prepare_prototype_batch(settings)

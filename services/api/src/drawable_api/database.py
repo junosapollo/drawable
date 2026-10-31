@@ -205,6 +205,7 @@ def migrate(path: Path) -> int:
                     COMMIT;
                     """
                 )
+                version = 3
             except Exception:
                 if db.in_transaction:
                     db.execute("ROLLBACK")

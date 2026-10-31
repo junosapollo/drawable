@@ -1,19 +1,117 @@
+# Project-specific ignored paths
 NEW/
 docs/*
 datasets/
 artifacts/
 reports/private/
-.venv/
-.ruff_cache/
-.pytest_cache/
-.mypy_cache/
-*.sqlite
-*.sqlite3
+
+# Node.js & Frontend builds
 node_modules/
 dist/
+build/
+out/
+*.tsbuildinfo
+.vite/
+.parcel-cache/
+.next/
+.nuxt/
+.cache/
+
+# Testing & Coverage
 coverage/
 playwright-report/
 test-results/
-*.tsbuildinfo
+.nyc_output/
+blob-report/
+
+# Package manager logs & stores
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-store/
+
+# Python, uv & ML
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv/
+venv/
+ENV/
+env/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+.hypothesis/
+*.ipynb_checkpoints/
+
+# SQLite & Databases
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+!.env.template
+*.pem
+*.key
+*.cert
+
+# Logs & Temporary Files
 *.log
+logs/
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Operating System files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Editors & IDEs
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# AI agents & editor assistants
+.claude/
+.opencode/
+.cursor/
+.windsurf/
+.antigravity/

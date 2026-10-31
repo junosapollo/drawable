@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { makeStrokeOperation, renderLayer, renderOperation } from '../lib/drawing'
-import { LOGICAL_SIZE, type DrawPoint, type StrokeOperation } from '../lib/types'
+import { makeStrokeOperation, renderDrawingOperation, renderLayer, renderOperation } from '../lib/drawing'
+import { LOGICAL_SIZE, type DrawingOperation, type DrawPoint, type StrokeOperation } from '../lib/types'
 import { useDocumentStore } from '../state/documentStore'
 import { useSearchStore } from '../state/searchStore'
 import { useViewStore } from '../state/viewStore'
@@ -23,6 +23,29 @@ interface PinchGesture {
   panY: number
 }
 
+// Tracks what pixels are actually on a committed-layer canvas.
+// Canvas identity is checked (not just layer ID) so a new DOM element forces a full rebuild.
+interface RenderedLayerState {
+  canvas: HTMLCanvasElement
+  operationIds: string[]
+}
+
+/**
+ * Returns true when the previous render is a prefix of the new operation list
+ * AND the canvas element is the same DOM node.
+ * Deliberately uses stable IDs instead of object identity because structuredClone()
+ * recreates every operation object on each store update.
+ */
+function isAppendOnly(
+  previous: RenderedLayerState | undefined,
+  canvas: HTMLCanvasElement,
+  operations: DrawingOperation[],
+): previous is RenderedLayerState {
+  if (!previous || previous.canvas !== canvas) return false
+  if (previous.operationIds.length > operations.length) return false
+  return previous.operationIds.every((id, index) => operations[index]?.id === id)
+}
+
 export function CanvasStage({ searchIntegration = 'fixture', readOnly = false }: { searchIntegration?: 'fixture' | 'disabled'; readOnly?: boolean }) {
   const stageRef = useRef<HTMLDivElement>(null)
   const paperRef = useRef<HTMLDivElement>(null)
@@ -36,6 +59,18 @@ export function CanvasStage({ searchIntegration = 'fixture', readOnly = false }:
   const touchPointers = useRef(new Map<number, { x: number; y: number }>())
   const spacePressed = useRef(false)
   const fitLocked = useRef(true)
+
+  // ── Active-stroke rAF coalescing ────────────────────────────────────────────
+  // Pointer events accumulate into activeOperation synchronously; the canvas
+  // paint is deferred to the next animation frame so many events per frame
+  // produce at most one tessellation/fill.
+  const activePaintFrame = useRef<number | null>(null)
+
+  // ── Committed-layer incremental rendering ───────────────────────────────────
+  // Records the document ID and per-layer baseline so the rendering effect
+  // can skip full rebuilds when only new operations were appended.
+  const renderedDocumentId = useRef<string | null>(null)
+  const renderedLayers = useRef(new Map<string, RenderedLayerState>())
 
   const document = useDocumentStore((state) => state.document)
   const activeLayerId = useDocumentStore((state) => state.activeLayerId)
@@ -81,18 +116,52 @@ export function CanvasStage({ searchIntegration = 'fixture', readOnly = false }:
 
   useEffect(() => { fitCanvas() }, [fitCanvas, fitRequest])
 
+  // ── Committed-layer rendering effect ────────────────────────────────────────
+  // On each change to document.layers (or document identity):
+  //   • When the document identity changed → clear all baselines, full rebuild.
+  //   • For each layer:
+  //     - If the canvas is the same node and previous IDs are a prefix → append only.
+  //     - Otherwise → full rebuild of that layer only.
+  // The `active` guard prevents a stale async completion from corrupting baselines.
   useEffect(() => {
     let active = true
-    resolveRasterImages(document).catch(() => new Map<string, CanvasImageSource>()).then((rasterAssets) => {
+    const rasterPromise = resolveRasterImages(document) ?? Promise.resolve(new Map<string, CanvasImageSource>())
+    rasterPromise.catch(() => new Map<string, CanvasImageSource>()).then((rasterAssets) => {
       if (!active) return
+
+      // Invariant 8: Document replacement clears all layer baselines.
+      if (renderedDocumentId.current !== document.id) {
+        renderedDocumentId.current = document.id
+        renderedLayers.current.clear()
+      }
+
       for (const layer of document.layers) {
         const canvas = layerCanvasRefs.current.get(layer.id)
         const context = canvas?.getContext('2d')
-        if (context) renderLayer(context, layer, rasterAssets)
+        if (!canvas || !context) continue
+
+        const previous = renderedLayers.current.get(layer.id)
+
+        if (isAppendOnly(previous, canvas, layer.operations)) {
+          // Pure append path — draw only the new suffix, in document order.
+          const newOperations = layer.operations.slice(previous.operationIds.length)
+          for (const operation of newOperations) {
+            renderDrawingOperation(context, operation, rasterAssets)
+          }
+        } else {
+          // Full rebuild — covers undo, clear, replace, reorder within a layer.
+          renderLayer(context, layer, rasterAssets)
+        }
+
+        // Update baseline AFTER the draw so it describes pixels actually painted.
+        renderedLayers.current.set(layer.id, {
+          canvas,
+          operationIds: layer.operations.map((operation) => operation.id),
+        })
       }
     })
     return () => { active = false }
-  }, [document.layers])
+  }, [document.id, document.layers])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -143,6 +212,16 @@ export function CanvasStage({ searchIntegration = 'fixture', readOnly = false }:
     }
   }, [brushSize, document.layers, fitCanvas, panX, panY, readOnly, redo, setActiveLayer, setBrushSize, setTool, setView, traceVisible, undo, updateTrace, zoom])
 
+  // Cancel any pending active-paint frame on unmount.
+  useEffect(() => {
+    return () => {
+      if (activePaintFrame.current !== null) {
+        cancelAnimationFrame(activePaintFrame.current)
+        activePaintFrame.current = null
+      }
+    }
+  }, [])
+
   const logicalPoint = (event: PointerEvent | React.PointerEvent): DrawPoint | null => {
     const paper = paperRef.current
     if (!paper) return null
@@ -163,6 +242,25 @@ export function CanvasStage({ searchIntegration = 'fixture', readOnly = false }:
     if (!context) return
     context.clearRect(0, 0, LOGICAL_SIZE, LOGICAL_SIZE)
     renderOperation(context, operation, operation.tool === 'eraser')
+  }
+
+  // Cancel any scheduled active-paint frame.
+  const cancelActivePaint = () => {
+    if (activePaintFrame.current !== null) {
+      cancelAnimationFrame(activePaintFrame.current)
+      activePaintFrame.current = null
+    }
+  }
+
+  // Schedule at most one active-paint per animation frame.
+  // The rAF callback reads activeOperation.current so it always uses the
+  // latest accumulated points, never a captured older snapshot.
+  const scheduleActivePaint = () => {
+    if (activePaintFrame.current !== null) return
+    activePaintFrame.current = requestAnimationFrame(() => {
+      activePaintFrame.current = null
+      paintActive()
+    })
   }
 
   const updateActiveOperation = (event: React.PointerEvent) => {
@@ -187,7 +285,7 @@ export function CanvasStage({ searchIntegration = 'fixture', readOnly = false }:
           timing: 'available',
         },
       }
-      paintActive()
+      scheduleActivePaint()
     }
   }
 
@@ -250,7 +348,7 @@ export function CanvasStage({ searchIntegration = 'fixture', readOnly = false }:
       }
       return
     }
-    if (panGesture.current?.pointerId === event.pointerId) {
+    if (panGesture.current && panGesture.current.pointerId === event.pointerId) {
       setView(zoom, panGesture.current.panX + event.clientX - panGesture.current.startX, panGesture.current.panY + event.clientY - panGesture.current.startY)
       fitLocked.current = false
       return
@@ -259,6 +357,8 @@ export function CanvasStage({ searchIntegration = 'fixture', readOnly = false }:
   }
 
   const clearActive = () => {
+    // Cancel any queued preview frame before clearing the overlay.
+    cancelActivePaint()
     const context = activeCanvasRef.current?.getContext('2d')
     if (context) context.clearRect(0, 0, LOGICAL_SIZE, LOGICAL_SIZE)
     activePoints.current = []
@@ -336,6 +436,7 @@ export function CanvasStage({ searchIntegration = 'fixture', readOnly = false }:
           {[...document.layers].reverse().map((layer) => (
             <canvas
               key={layer.id}
+              data-layer-id={layer.id}
               ref={(node) => { if (node) layerCanvasRefs.current.set(layer.id, node); else layerCanvasRefs.current.delete(layer.id) }}
               className="drawing-surface"
               width={LOGICAL_SIZE}

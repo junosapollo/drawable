@@ -1,0 +1,45 @@
+{
+  "backward_feasibility_tested": false,
+  "checked_at": "2026-10-18T09:18:57.373664+00:00",
+  "colab_release_tag": "release-colab-external-images_20261014-060047_RC00",
+  "data_uploaded": false,
+  "gpu": {
+    "compute_capability": "7.5",
+    "free_memory_bytes": 15476785152,
+    "name": "Tesla T4",
+    "pytorch_cuda": "13.0",
+    "status": "available",
+    "tensor_smoke_result": 32768.0,
+    "total_memory_bytes": 15637086208
+  },
+  "inference_tested": false,
+  "models_loaded": false,
+  "network_used": false,
+  "optimizer_created": false,
+  "packages": {
+    "Pillow": "11.3.0",
+    "open_clip_torch": "not-installed",
+    "pydantic": "2.13.5",
+    "safetensors": "0.8.0",
+    "timm": "1.0.30",
+    "torch": "2.11.0+cu130",
+    "torchvision": "0.26.0+cu130",
+    "transformers": "5.18.0"
+  },
+  "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+  "profile": "colab-cuda-runtime-preflight",
+  "python": "3.13.15",
+  "python_311_compatible": false,
+  "runtime_disk": {
+    "free_bytes": 75463802880,
+    "total_bytes": 120942624768
+  },
+  "schema_version": 2,
+  "torch": {
+    "cuda_build": "13.0",
+    "cudnn": 92700,
+    "version": "2.11.0+cu130"
+  },
+  "training_authorized": false,
+  "training_started": false
+}
