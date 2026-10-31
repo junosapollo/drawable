@@ -2,11 +2,6 @@ from __future__ import annotations
 
 import math
 import os
-
-try:
-    import resource
-except ImportError:
-    resource = None
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -32,6 +27,7 @@ from .io import (
     write_json_atomic,
 )
 from .models import verify_model_registry
+from .peak_memory import peak_rss_mib
 
 CPU_MODEL_IDS = ("mobileclip2-s2-dfndr2b", "dinov2-small")
 
@@ -121,6 +117,9 @@ def measure_frozen_cpu(
     """Measure the two frozen image encoders on a rights-checked, review-only staging set."""
     if not 5 <= repeats <= 100:
         raise MLError("CPU measurement repeats must be between 5 and 100")
+    # Fail before writing any derived profile or loading large model artifacts
+    # when this platform cannot provide a genuine peak-memory reading.
+    peak_rss_mib()
     root = data_root.resolve(strict=True)
     snapshot_file = resolve_private_path(root, snapshot_path.as_posix())
     try:
@@ -256,16 +255,14 @@ def measure_frozen_cpu(
         del encoder
         del vector
         del elapsed
-    peak_rss_mib = (
-        resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 if resource is not None else 0.0
-    )
+    peak_memory_mib = peak_rss_mib()
     model_file_bytes = sum(row["file_bytes"] for row in model_verification["models"])
     produced_at = datetime.now(UTC)
     measurements: dict[str, int | float | bool | str] = {
         "models_measured": len(output_models),
         "mobileclip_cpu_p95_ms": output_models[CPU_MODEL_IDS[0]]["cpu_p95_ms"],
         "dinov2_cpu_p95_ms": output_models[CPU_MODEL_IDS[1]]["cpu_p95_ms"],
-        "peak_rss_mib": round(peak_rss_mib, 3),
+        "peak_rss_mib": round(peak_memory_mib, 3),
         "artifact_disk_mib": round(model_file_bytes / (1024 * 1024), 3),
         "staging_assets": len(snapshot.items),
         "inference_repeats_per_asset": repeats,
@@ -296,7 +293,8 @@ def measure_frozen_cpu(
         ],
         summary=(
             f"Measured the pinned MobileCLIP2-S2 and DINOv2-small frozen encoders on CPU using "
-            f"{len(snapshot.items)} approved staging assets, {repeats} repeats per asset, and {threads} CPU threads."
+            f"{len(snapshot.items)} approved staging assets, {repeats} repeats per asset, and {threads} CPU threads. "
+            f"Peak memory is the current process lifetime peak, including model loading and inference."
         ),
     )
     target = output_path if output_path.is_absolute() else root / output_path

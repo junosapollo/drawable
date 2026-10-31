@@ -133,7 +133,7 @@ export default function M0WorkspacePage() {
           </section>
           <section className="m0-panel">
             <header><div><span className="dock-eyebrow">Effort evidence</span><h2>Track and export active time</h2></div><span>{workspace?.effort_log_available ? 'Imported' : 'Browser local'}</span></header>
-            <p>The floating timer counts foreground-visible work in four M0 categories and checkpoints to IndexedDB every 15 seconds. It pauses when this browser tab is hidden. Export the log, then import it into the private data root before generating the effort gate report.</p>
+            <p>The floating timer counts foreground-visible work in four M0 categories and checkpoints to IndexedDB every 15 seconds. It pauses when this browser tab is hidden or you leave the M0 and Record workspaces. Returning to a tracked workspace does not restart it. Export the log, then import it into the private data root before generating the effort gate report.</p>
             <div className="m0-actions">
               <Button onClick={() => void downloadEffort()}><Download size={15} />Download effort log</Button>
               <code>uv run --project services/api --locked drawable m0 effort-import --root datasets --input &lt;downloaded-file&gt;</code>

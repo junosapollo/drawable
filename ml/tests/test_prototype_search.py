@@ -55,20 +55,23 @@ def test_build_preserves_review_identity_and_rejects_corrupt_vectors_or_source_b
         }
         files.append({"path": relative, "bytes": path.stat().st_size, "sha256": digest})
     monkeypatch.setattr(prototype, "_models", lambda: rows)
-    monkeypatch.setattr(prototype, "acquire_models", lambda root: files)
+    monkeypatch.setattr(prototype, "acquire_models", lambda _root, _model_ids: files)
 
-    def encoder(dimension):
+    def encoder(model_id, dimension):
         def encode(image, *, view="full"):
             vector = torch.zeros(dimension)
             vector[0] = 1
             return vector
 
-        return SimpleNamespace(model_id="fixture-only", encode=encode)
+        return SimpleNamespace(model_id=model_id, encode=encode)
 
     monkeypatch.setattr(
         prototype,
         "_load_models",
-        lambda root, structural: {"semantic": encoder(512), "structural": encoder(384)},
+        lambda root, structural: {
+            "semantic": encoder(prototype.MODEL_IDS[0], 512),
+            "structural": encoder(prototype.MODEL_IDS[1], 384),
+        },
     )
     first = prototype.prepare(tmp_path, "snapshot.json")
     assert first["item_count"] == 1

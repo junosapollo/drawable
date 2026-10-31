@@ -761,6 +761,8 @@ def _validate_gate_report(root: Path, gate_id: str, report_path: str) -> tuple[G
         raise ValueError(
             f"Required measurements cannot be negative: {', '.join(negative_measurements)}"
         )
+    if gate_id == "frozen_cpu_forward" and report.measurements["peak_rss_mib"] <= 0:
+        raise ValueError("Measurement peak_rss_mib must be greater than zero")
     for name, minimum in spec.minimums.items():
         minimum_observed = report.measurements.get(name)
         if type(minimum_observed) is not int or minimum_observed < minimum:

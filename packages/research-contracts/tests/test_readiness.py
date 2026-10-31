@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -10,9 +11,12 @@ from pydantic import ValidationError
 
 from drawable_research_contracts.readiness import (
     REQUIREMENTS_REVISION,
+    GateAttestationV1,
     GateReportV1,
     GateReportV2,
+    ReadinessLedgerV1,
     attest_gate,
+    sha256_file,
     validate_readiness,
 )
 
@@ -244,3 +248,105 @@ def test_attestation_rejects_untrusted_raw_report_path(tmp_path: Path) -> None:
             "Reviewed the sample identities, labels and recorded timing.",
             None,
         )
+
+
+def _cpu_report(root: Path, peak_memory: float | bool | str | None = 1.0, *, include_peak: bool = True) -> Path:
+    evidence = root / "cpu-input.json"
+    evidence.write_text('{"verified":true}\n', encoding="utf-8")
+    digest = hashlib.sha256(evidence.read_bytes()).hexdigest()
+    measurements: dict[str, int | float | bool | str] = {
+        "models_measured": 2,
+        "mobileclip_cpu_p95_ms": 100.0,
+        "dinov2_cpu_p95_ms": 200.0,
+        "artifact_disk_mib": 10.0,
+    }
+    if include_peak and peak_memory is not None:
+        measurements["peak_rss_mib"] = peak_memory
+    report = GateReportV2(
+        schema_version=2,
+        requirements_revision=REQUIREMENTS_REVISION,
+        artifact_type="drawable-gate-report",
+        gate_id="frozen_cpu_forward",
+        producer="drawable-ml models measure-cpu",
+        produced_at=datetime.now(UTC),
+        checks={
+            "model_terms_reviewed": True,
+            "frozen_weights_verified": True,
+            "forward_pass_verified": True,
+            "profile_accurate": True,
+        },
+        measurements=measurements,
+        profile_hashes={"source_selection": "a" * 64, "model_preprocessing": "b" * 64},
+        inputs=[{"path": "cpu-input.json", "sha256": digest}],
+        summary="Measured the current process lifetime peak through inference.",
+    )
+    path = root / "reports" / "cpu-report.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(report.model_dump_json(), encoding="utf-8")
+    return path
+
+
+def test_cpu_forward_gate_accepts_positive_peak_memory(tmp_path: Path) -> None:
+    _cpu_report(tmp_path, 0.125)
+    attest_gate(
+        tmp_path,
+        "frozen_cpu_forward",
+        "reports/cpu-report.json",
+        "owner-local",
+        "Reviewed model timings, artifact size and measured process memory.",
+        None,
+    )
+
+
+@pytest.mark.parametrize(
+    ("peak_memory", "include_peak", "message"),
+    [
+        (0, True, "greater than zero"),
+        (-1.0, True, "cannot be negative"),
+        (None, False, "missing"),
+        (True, True, "missing"),
+    ],
+)
+def test_cpu_forward_gate_rejects_invalid_peak_memory(
+    tmp_path: Path, peak_memory, include_peak: bool, message: str
+) -> None:
+    _cpu_report(tmp_path, peak_memory, include_peak=include_peak)
+    with pytest.raises(ValueError, match=message):
+        attest_gate(
+            tmp_path,
+            "frozen_cpu_forward",
+            "reports/cpu-report.json",
+            "owner-local",
+            "Reviewed model timings, artifact size and measured process memory.",
+            None,
+        )
+
+
+@pytest.mark.parametrize("peak_memory", [math.inf, math.nan])
+def test_cpu_forward_report_rejects_nonfinite_peak_memory(tmp_path: Path, peak_memory: float) -> None:
+    with pytest.raises(ValidationError, match="finite"):
+        _cpu_report(tmp_path, peak_memory)
+
+
+def test_existing_attestation_with_zero_memory_is_invalidated_on_read(tmp_path: Path) -> None:
+    report_path = _cpu_report(tmp_path, 0)
+    attestation = GateAttestationV1(
+        schema_version=1,
+        gate_id="frozen_cpu_forward",
+        report_path="reports/cpu-report.json",
+        report_sha256=sha256_file(report_path),
+        reviewer_id="owner-local",
+        reviewed_at=datetime.now(UTC),
+        review_note="Legacy owner review recorded before zero memory was rejected.",
+    )
+    ledger = ReadinessLedgerV1(
+        schema_version=1,
+        attestations={"frozen_cpu_forward": attestation},
+    )
+    ledger_path = tmp_path / "reports" / "readiness-ledger.json"
+    ledger_path.write_text(ledger.model_dump_json(), encoding="utf-8")
+
+    readiness = validate_readiness(tmp_path, "m0", ledger_path)
+    assert readiness["status"] == "blocked"
+    assert readiness["blockers"]["frozen_cpu_forward"].startswith("evidence_invalid:")
+    assert "greater than zero" in readiness["blockers"]["frozen_cpu_forward"]

@@ -1,4 +1,75 @@
 import { expect, test } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
+
+async function referenceLayerHashes(page: import('@playwright/test').Page) {
+  return page.evaluate(async () => {
+    const base = window.location.origin
+    const [{ documentStore }, drawing, assets] = await Promise.all([
+      import(new URL('/src/state/documentStore.ts', base).href),
+      import(new URL('/src/lib/drawing.ts', base).href),
+      import(new URL('/src/services/rasterAssets.ts', base).href),
+    ])
+    const documentModel = documentStore.getState().document
+    const rasterAssets = await assets.resolveRasterImages(documentModel)
+    const rows = []
+    for (const layer of documentModel.layers) {
+      const actualCanvas = document.querySelector<HTMLCanvasElement>(`canvas[data-layer-id="${layer.id}"]`)
+      if (!actualCanvas) throw new Error(`Missing visible canvas for ${layer.id}`)
+      const referenceCanvas = document.createElement('canvas')
+      referenceCanvas.width = actualCanvas.width
+      referenceCanvas.height = actualCanvas.height
+      const referenceContext = referenceCanvas.getContext('2d')
+      if (!referenceContext) throw new Error('Could not read reference canvas pixels')
+      drawing.renderLayer(referenceContext, layer, rasterAssets)
+      const referencePixels = referenceContext.getImageData(0, 0, referenceCanvas.width, referenceCanvas.height).data
+      let nonTransparentPixels = 0
+      for (let index = 3; index < referencePixels.length; index += 4) {
+        if (referencePixels[index]) nonTransparentPixels += 1
+      }
+      const hash = async (pixels: Uint8ClampedArray) => {
+        const digest = await crypto.subtle.digest('SHA-256', pixels)
+        return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join('')
+      }
+      rows.push({
+        id: layer.id,
+        width: actualCanvas.width,
+        height: actualCanvas.height,
+        hash: await hash(referencePixels),
+        nonTransparentPixels,
+      })
+    }
+    return rows.sort((left, right) => left.id.localeCompare(right.id))
+  })
+}
+
+async function visibleLayerHashes(page: import('@playwright/test').Page) {
+  return page.evaluate(async () => {
+    const rows = []
+    for (const canvas of document.querySelectorAll<HTMLCanvasElement>('canvas[data-layer-id]')) {
+      const context = canvas.getContext('2d')
+      if (!context) throw new Error('Could not read canvas pixels')
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data
+      const digest = await crypto.subtle.digest('SHA-256', pixels)
+      const hash = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join('')
+      rows.push({ id: canvas.dataset.layerId, width: canvas.width, height: canvas.height, hash })
+    }
+    return rows.sort((left, right) => left.id.localeCompare(right.id))
+  })
+}
+
+async function expectFullRenderMatches(page: import('@playwright/test').Page, requireInk = true) {
+  const rows = await referenceLayerHashes(page)
+  if (requireInk) expect(rows.some((row) => row.nonTransparentPixels > 0)).toBe(true)
+  const expected = rows.map(({ id, width, height, hash }) => ({ id, width, height, hash }))
+  await expect.poll(() => visibleLayerHashes(page), { timeout: 10_000 }).toEqual(expected)
+}
+
+async function drawAt(page: import('@playwright/test').Page, box: NonNullable<Awaited<ReturnType<import('@playwright/test').Locator['boundingBox']>>>, y: number) {
+  await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * y)
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * (y + 0.035), { steps: 12 })
+  await page.mouse.up()
+}
 
 test('draws strokes and advances fixture references', async ({ page }) => {
   await page.goto('/draw')
@@ -225,55 +296,110 @@ test('incremental rendering produces pixel-identical results to a full layer reb
   const box = await stage.boundingBox()
   if (!box) throw new Error('Canvas stage has no bounds')
 
-  // Draw three normal strokes on layer 1.
+  // Draw overlapping strokes to exercise incremental append rendering.
   for (let index = 0; index < 3; index++) {
-    await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * (0.3 + index * 0.12))
-    await page.mouse.down()
-    await page.mouse.move(box.x + box.width * 0.7, box.y + box.height * (0.35 + index * 0.12), { steps: 10 })
-    await page.mouse.up()
+    await drawAt(page, box, 0.34 + index * 0.035)
   }
+  await expectFullRenderMatches(page)
 
-  // Undo one stroke (forces a full rebuild of layer-1 in the new implementation).
+  // An overlapping eraser must preserve compositing order on the append path.
+  await page.getByRole('button', { name: /Vector eraser/ }).click()
+  await drawAt(page, box, 0.37)
+  await expectFullRenderMatches(page)
+
   await page.keyboard.press('Control+z')
+  await expectFullRenderMatches(page)
 
-  // Redo (should use append path for the single restored operation).
   await page.keyboard.press('Control+Shift+z')
+  await expectFullRenderMatches(page)
 
-  // Capture pixel data from the incrementally-rendered first canvas layer.
-  const layer1Canvas = page.locator('canvas[data-layer-id="layer-1"]')
-  const incrementalPixels = await layer1Canvas.evaluate((canvas) => {
-    const ctx = (canvas as HTMLCanvasElement).getContext('2d')
-    if (!ctx) return null
-    const { width, height } = canvas as HTMLCanvasElement
-    const data = ctx.getImageData(0, 0, width, height).data
-    // Return a compact summary: count of non-transparent pixels.
-    let count = 0
-    for (let i = 3; i < data.length; i += 4) if (data[i] > 0) count++
-    return count
+  // Clear the active layer through the workspace UI, then verify its rebuilt pixels.
+  await page.getByRole('button', { name: 'Layers', exact: true }).click()
+  await page.getByRole('button', { name: 'Clear Layer 1' }).click()
+  await page.getByRole('button', { name: 'Clear layer', exact: true }).click()
+  await expectFullRenderMatches(page, false)
+
+  // Import raster artwork, then append another stroke above the raster layer.
+  await page.getByRole('button', { name: 'Import sketch' }).click()
+  await page.locator('input[type="file"]').setInputFiles({
+    name: 'reference.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR42mNkYGD4z8DAwMgAI0AMBgAEGgIBO6V/iQAAAABJRU5ErkJggg==', 'base64'),
   })
+  await expect(page.getByText(/is ready to open as an independent drawing/)).toBeVisible()
+  const popupPromise = page.waitForEvent('popup')
+  await page.getByRole('link', { name: 'Open imported sketch' }).click()
+  const imported = await popupPromise
+  await imported.waitForLoadState('domcontentloaded')
+  const importedStage = imported.getByLabel('Drawing canvas')
+  const importedBox = await importedStage.boundingBox()
+  if (!importedBox) throw new Error('Imported drawing canvas has no bounds')
+  await expectFullRenderMatches(imported)
+  await drawAt(imported, importedBox, 0.45)
+  await expectFullRenderMatches(imported)
 
-  // At least some pixels must be opaque (sanity check that drawing occurred).
-  expect(incrementalPixels).toBeGreaterThan(0)
+  // Wait for the exact current revision to reach IndexedDB before reload.
+  await expect.poll(() => imported.evaluate(async () => {
+    const { documentStore } = await import(new URL('/src/state/documentStore.ts', location.origin).href)
+    const current = documentStore.getState().document
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open('drawable-documents', 2)
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+    try {
+      const saved = await new Promise<{ document?: { revision?: number; layers?: Array<{ operations?: Array<{ id?: string }> }> } } | undefined>((resolve, reject) => {
+        const request = db.transaction('documents').objectStore('documents').get(`document:${current.id}:current`)
+        request.onsuccess = () => resolve(request.result)
+        request.onerror = () => reject(request.error)
+      })
+      const currentIds = current.layers.flatMap((layer: { operations: Array<{ id: string }> }) => layer.operations.map((operation: { id: string }) => operation.id))
+      const savedIds = saved?.document?.layers?.flatMap((layer) => layer.operations?.map((operation) => operation.id) ?? []) ?? []
+      return saved?.document?.revision === current.revision && JSON.stringify(savedIds) === JSON.stringify(currentIds)
+    } finally {
+      db.close()
+    }
+  }), { timeout: 10_000 }).toBe(true)
 
-  // Reload the page so the document is restored from autosave and every layer
-  // is rendered from scratch via a fresh full renderLayer() call.
-  await page.waitForTimeout(900)
-  await page.reload()
+  const expectedHashes = await referenceLayerHashes(imported)
+  await imported.close()
+  await page.goto('/draw')
   await expect(page.getByText('Continue your last drawing?')).toBeVisible()
   await page.getByRole('button', { name: 'Restore drawing' }).click()
   await expect(page.getByText('Continue your last drawing?')).toBeHidden()
 
-  // Poll until the fresh full-rebuild render matches the incrementally painted pixel count.
-  await expect.poll(
-    () => layer1Canvas.evaluate((canvas) => {
-      const ctx = (canvas as HTMLCanvasElement).getContext('2d')
-      if (!ctx) return 0
-      const { width, height } = canvas as HTMLCanvasElement
-      const data = ctx.getImageData(0, 0, width, height).data
-      let count = 0
-      for (let i = 3; i < data.length; i += 4) if (data[i] > 0) count++
-      return count
-    }),
-    { timeout: 5000 },
-  ).toBe(incrementalPixels)
+  await expect.poll(async () => {
+    return visibleLayerHashes(page)
+  }, { timeout: 10_000 }).toEqual(expectedHashes.map(({ id, width, height, hash }) => ({ id, width, height, hash })))
+  await expectFullRenderMatches(page)
+})
+
+test('effort timer pauses across workspace navigation and only exports tracked time', async ({ page }, testInfo) => {
+  await page.goto('/m0')
+  const tracker = page.getByLabel('M0 active effort timer')
+  await tracker.getByRole('button', { name: 'Start effort' }).click()
+  const startedAt = Date.now()
+  await page.waitForTimeout(1200)
+
+  await page.getByRole('button', { name: 'Switch workspace' }).click()
+  await page.getByRole('menuitem', { name: /^Draw$/ }).click()
+  await page.getByLabel('Drawing canvas').waitFor()
+  await page.waitForTimeout(1600)
+
+  await page.getByRole('button', { name: 'Switch workspace' }).click()
+  await page.getByRole('menuitem', { name: /^M0$/ }).click()
+  await expect(page.getByLabel('M0 active effort timer').getByRole('button', { name: 'Start effort' })).toBeVisible()
+
+  await page.getByLabel('M0 active effort timer').getByRole('button', { name: 'Start effort' }).click()
+  await page.waitForTimeout(1200)
+  await page.getByLabel('M0 active effort timer').getByRole('button', { name: 'Pause effort' }).click()
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Download effort log' }).click()
+  const download = await downloadPromise
+  const logPath = testInfo.outputPath(download.suggestedFilename())
+  await download.saveAs(logPath)
+  const log = JSON.parse(await readFile(logPath, 'utf8')) as { chunks: Array<{ activeMs: number }> }
+  const trackedMs = log.chunks.reduce((sum, chunk) => sum + chunk.activeMs, 0)
+  expect(trackedMs).toBeGreaterThan(1500)
+  expect(trackedMs).toBeLessThan(Date.now() - startedAt - 700)
 })
