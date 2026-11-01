@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "check": "tsc -b --pretty false",
     "test": "vitest run",
+    "test:perf": "vitest run src/state/documentStore.perf.test.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {

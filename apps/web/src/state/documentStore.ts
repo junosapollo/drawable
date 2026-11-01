@@ -2,7 +2,21 @@ import { createStore, type StoreApi } from 'zustand/vanilla'
 import { useContext, createContext, createElement, type ReactNode } from 'react'
 import { useStore } from 'zustand'
 import { uid } from '../lib/drawing'
-import type { DrawingDocument, StrokeOperation, Tool } from '../lib/types'
+import type { DrawingDocument, DrawingLayer, StrokeOperation, Tool } from '../lib/types'
+import {
+  DEFAULT_HISTORY_LIMITS,
+  applyHistoryEntry,
+  layerClearedEntry,
+  layerMovedEntry,
+  layerPropertiesChangedEntry,
+  operationAppendedEntry,
+  titleChangedEntry,
+  traceChangedEntry,
+  trimFuture,
+  trimPast,
+  type HistoryEntry,
+  type HistoryLimits,
+} from './documentHistory'
 
 export type DocumentCommand =
   | { type: 'operation_committed'; layerId: string; operation: StrokeOperation }
@@ -17,6 +31,7 @@ export type DocumentCommand =
 
 export interface DocumentStoreOptions {
   onCommand?: (command: DocumentCommand) => void
+  history?: Partial<HistoryLimits>
 }
 
 const makeDocument = (): DrawingDocument => ({
@@ -40,14 +55,10 @@ const makeDocument = (): DrawingDocument => ({
   },
 })
 
-function cloneDocument(document: DrawingDocument): DrawingDocument {
-  return structuredClone(document)
-}
-
 export interface DocumentState {
   document: DrawingDocument
-  past: DrawingDocument[]
-  future: DrawingDocument[]
+  past: HistoryEntry[]
+  future: HistoryEntry[]
   activeLayerId: string
   activeTool: Tool
   brushSize: number
@@ -75,41 +86,56 @@ export interface DocumentState {
   newDocument: () => void
 }
 
-function mutateDocument(
-  state: DocumentState,
-  mutation: (document: DrawingDocument) => void,
-  affectsSearch = true,
-): Pick<DocumentState, 'document' | 'past' | 'future'> {
-  const next = cloneDocument(state.document)
-  mutation(next)
-  if (affectsSearch) next.revision += 1
-  next.updatedAt = Date.now()
-  return {
-    document: next,
-    past: [...state.past.slice(-499), state.document],
-    future: [],
-  }
-}
+const layerSettings = (layer: DrawingLayer) => ({
+  name: layer.name,
+  visible: layer.visible,
+  opacity: layer.opacity,
+})
 
 export function createDocumentStore(options: DocumentStoreOptions = {}): StoreApi<DocumentState> {
   const emit = options.onCommand ?? (() => undefined)
+  const limits = { ...DEFAULT_HISTORY_LIMITS, ...options.history }
+
+  function commitEntry(
+    state: DocumentState,
+    entry: HistoryEntry,
+    affectsSearch: boolean,
+  ): Pick<DocumentState, 'document' | 'past' | 'future'> {
+    const next = applyHistoryEntry(state.document, entry, 'redo')
+    return {
+      document: {
+        ...next,
+        revision: state.document.revision + (affectsSearch ? 1 : 0),
+        updatedAt: Date.now(),
+      },
+      past: trimPast([...state.past, entry], limits),
+      future: [],
+    }
+  }
+
   return createStore<DocumentState>((set) => ({
     document: makeDocument(),
-  past: [],
-  future: [],
-  activeLayerId: 'layer-1',
-  activeTool: 'pressure',
-  brushSize: 12,
-  stabilization: 50,
-  simulatePressure: true,
-  hasHydrated: false,
+    past: [],
+    future: [],
+    activeLayerId: 'layer-1',
+    activeTool: 'pressure',
+    brushSize: 12,
+    stabilization: 50,
+    simulatePressure: true,
+    hasHydrated: false,
     setHydrated: (hasHydrated) => set({ hasHydrated }),
+    // A replacement is an ownership boundary: the incoming document may be
+    // shared with import/restore code, so clone once and reset history.
     replaceDocument: (document, activeLayerId) => set((state) => {
-      const next = { document: { ...cloneDocument(document), revision: state.document.revision + 1 }, past: [], future: [], activeLayerId: document.layers.some((layer) => layer.id === activeLayerId) ? activeLayerId! : document.layers[0]?.id ?? 'layer-1' }
+      const next = { document: { ...structuredClone(document), revision: state.document.revision + 1 }, past: [], future: [], activeLayerId: document.layers.some((layer) => layer.id === activeLayerId) ? activeLayerId! : document.layers[0]?.id ?? 'layer-1' }
       emit({ type: 'document_replaced' })
       return next
     }),
-    setTitle: (title) => set((state) => mutateDocument(state, (document) => { document.title = title.slice(0, 80) }, false)),
+    setTitle: (title) => set((state) => {
+      const next = title.slice(0, 80)
+      if (next === state.document.title) return state
+      return commitEntry(state, titleChangedEntry(state.document.title, next), false)
+    }),
     setTool: (activeTool) => set({ activeTool }),
     setBrushSize: (brushSize) => set({ brushSize: Math.min(40, Math.max(1, brushSize)) }),
     setStabilization: (stabilization) => set({ stabilization: Math.min(100, Math.max(0, stabilization)) }),
@@ -119,10 +145,13 @@ export function createDocumentStore(options: DocumentStoreOptions = {}): StoreAp
       const layerId = state.activeLayerId
       const layer = state.document.layers.find((candidate) => candidate.id === layerId)
       if (!layer) return state
-      emit({ type: 'operation_committed', layerId, operation: structuredClone(operation) })
-      return mutateDocument(state, (document) => {
-        document.layers.find((candidate) => candidate.id === layerId)?.operations.push(operation)
-      })
+      // Shallow copy keeps the ownership boundary cheap; `points` is shared and
+      // must be treated as immutable after commit.
+      const committed = { ...operation }
+      if (options.onCommand) {
+        options.onCommand({ type: 'operation_committed', layerId, operation: structuredClone(operation) })
+      }
+      return commitEntry(state, operationAppendedEntry(layerId, committed), true)
     }),
     updateLayer: (id, update) => set((state) => {
       const current = state.document.layers.find((layer) => layer.id === id)
@@ -136,64 +165,76 @@ export function createDocumentStore(options: DocumentStoreOptions = {}): StoreAp
         ...(update.visible === undefined ? {} : { visible: nextVisible }),
         ...(update.opacity === undefined ? {} : { opacity: nextOpacity }),
       } })
-      return mutateDocument(state, (document) => {
-        const layer = document.layers.find((candidate) => candidate.id === id)
-        if (!layer) return
-        if (update.name !== undefined) layer.name = update.name.slice(0, 40)
-        if (update.visible !== undefined) layer.visible = update.visible
-        if (update.opacity !== undefined) layer.opacity = Math.min(1, Math.max(0, update.opacity))
-      }, update.visible !== undefined || update.opacity !== undefined)
+      return commitEntry(state, layerPropertiesChangedEntry(id, layerSettings(current), {
+        name: nextName,
+        visible: nextVisible,
+        opacity: nextOpacity,
+      }), update.visible !== undefined || update.opacity !== undefined)
     }),
     moveLayer: (id, direction) => set((state) => {
       const index = state.document.layers.findIndex((layer) => layer.id === id)
       const target = index + direction
       if (index < 0 || target < 0 || target >= state.document.layers.length) return state
       emit({ type: 'layer_moved', layerId: id, direction })
-      return mutateDocument(state, (document) => {
-        const [layer] = document.layers.splice(index, 1)
-        if (layer) document.layers.splice(target, 0, layer)
-      })
+      return commitEntry(state, layerMovedEntry(id, index, target), true)
     }),
     clearLayer: (id) => set((state) => {
       const layer = state.document.layers.find((candidate) => candidate.id === id)
       if (!layer || layer.operations.length === 0) return state
       emit({ type: 'layer_cleared', layerId: id })
-      return mutateDocument(state, (document) => {
-        const target = document.layers.find((candidate) => candidate.id === id)
-        if (target) target.operations = []
-      })
+      return commitEntry(state, layerClearedEntry(id, layer.operations), true)
     }),
     setTrace: (assetId, imageUrl) => set((state) => {
       emit({ type: 'trace_updated' })
-      return mutateDocument(state, (document) => {
-        document.trace = { ...document.trace, assetId, imageUrl, visible: true }
-      }, false)
+      const trace = state.document.trace
+      return commitEntry(state, traceChangedEntry(
+        { assetId: trace.assetId, imageUrl: trace.imageUrl, visible: trace.visible },
+        { assetId, imageUrl, visible: true },
+      ), false)
     }),
     updateTrace: (update) => set((state) => {
       emit({ type: 'trace_updated' })
-      return mutateDocument(state, (document) => {
-        document.trace = { ...document.trace, ...update }
-      }, false)
+      const trace = state.document.trace
+      const before: Partial<Pick<DrawingDocument['trace'], 'visible' | 'opacity' | 'scale'>> = {}
+      const after: Partial<Pick<DrawingDocument['trace'], 'visible' | 'opacity' | 'scale'>> = {}
+      if (update.visible !== undefined) { before.visible = trace.visible; after.visible = update.visible }
+      if (update.opacity !== undefined) { before.opacity = trace.opacity; after.opacity = update.opacity }
+      if (update.scale !== undefined) { before.scale = trace.scale; after.scale = update.scale }
+      return commitEntry(state, traceChangedEntry(before, after), false)
     }),
     clearTrace: () => set((state) => {
       emit({ type: 'trace_updated' })
-      return mutateDocument(state, (document) => {
-        document.trace.assetId = null
-        document.trace.imageUrl = null
-      }, false)
+      const trace = state.document.trace
+      return commitEntry(state, traceChangedEntry(
+        { assetId: trace.assetId, imageUrl: trace.imageUrl },
+        { assetId: null, imageUrl: null },
+      ), false)
     }),
-    setResolvedTraceImage: (imageUrl) => set((state) => ({ document: { ...state.document, trace: { ...state.document.trace, imageUrl } } })),
+    setResolvedTraceImage: (imageUrl) => set((state) => {
+      if (state.document.trace.imageUrl === imageUrl) return state
+      return { document: { ...state.document, trace: { ...state.document.trace, imageUrl } } }
+    }),
     undo: () => set((state) => {
-    const previous = state.past.at(-1)
-    if (!previous) return state
-    emit({ type: 'undo' })
-    return { document: { ...cloneDocument(previous), revision: state.document.revision + 1, updatedAt: Date.now() }, past: state.past.slice(0, -1), future: [state.document, ...state.future].slice(0, 500) }
+      const entry = state.past.at(-1)
+      if (!entry) return state
+      const next = applyHistoryEntry(state.document, entry, 'undo')
+      emit({ type: 'undo' })
+      return {
+        document: { ...next, revision: state.document.revision + 1, updatedAt: Date.now() },
+        past: state.past.slice(0, -1),
+        future: trimFuture([entry, ...state.future], limits),
+      }
     }),
     redo: () => set((state) => {
-    const next = state.future[0]
-    if (!next) return state
-    emit({ type: 'redo' })
-    return { document: { ...cloneDocument(next), revision: state.document.revision + 1, updatedAt: Date.now() }, past: [...state.past, state.document].slice(-500), future: state.future.slice(1) }
+      const entry = state.future[0]
+      if (!entry) return state
+      const next = applyHistoryEntry(state.document, entry, 'redo')
+      emit({ type: 'redo' })
+      return {
+        document: { ...next, revision: state.document.revision + 1, updatedAt: Date.now() },
+        past: trimPast([...state.past, entry], limits),
+        future: state.future.slice(1),
+      }
     }),
     newDocument: () => set((state) => {
       emit({ type: 'document_created' })
